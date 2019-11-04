@@ -45,7 +45,17 @@ bool consume(char* op){
     }
   token = token->next;
   return true;
-}
+} //consume()
+
+
+bool consume_ident(){
+  if(token->kind != TK_IDENT){
+    return false;
+  } //if
+  token = token->next;
+  return true;
+} //consume_ident()
+
 
 //次のトークンが期待している記号のときには、トークンを一つ読み進める。
 //それ以外の場合には、エラーを報告する
@@ -70,6 +80,16 @@ int expect_number(){
   token = token->next;
   return val;
 }
+
+char* expect_ident(){
+  if(token->kind != TK_IDENT){
+    error_at(token->str, "expented an identifier");
+  } //if
+  char* s = strndup(token->str, token->len);
+  token = token->next;
+  return s;
+} //expect_ident()
+
 
 bool at_eof(){
   return token->kind == TK_EOF;
@@ -129,6 +149,13 @@ Token* tokenize(){
       continue;
     } //if integer
 
+    //identifier
+    if('a' <= *p && *p <= 'z'){
+      cur = new_token(TK_IDENT, cur, p++);
+      cur->len = 1;
+      continue;
+    } //if identifier
+
     /*error("invalid token");*/
     error_at(p, "invalid token");
   } //while()
@@ -161,17 +188,26 @@ Node* new_num(int val){
   return node;
 }
 
-/*Node* expr();
-Node* equality();
-Node* relational();
-Node* add();
-Node* mul();
-Node* unary();
-Node* primary();*/
 
-// expr = equality
+//assign = equality ("=" assign)?
+Node* assign(){
+  Node* node = equality();
+  if(consume("=")){
+    node = new_node(ND_ASSIGN, node, assign());
+  } //if
+  return node;
+} //assign()
+
+//stmt = expr ";"
+Node* stmt(){
+  Node* node = expr();
+  expect(";");
+  return node;
+} //stmt()
+
+// expr = assign
 Node *expr() {
-  return equality();
+  return assign();
 }
 
 
@@ -257,12 +293,16 @@ Node* unary(){
 } //urary()
 
 
-// primary = "(" expr ")" | num
+// primary = "(" expr ")" | num | ident
 Node *primary() {
   if (consume("(")) {
     Node *node = expr();
     expect(")");
     return node;
+  } //if
+
+  if(consume_ident()){
+    new_token();
   } //if
 
   return new_num(expect_number());
