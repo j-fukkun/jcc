@@ -52,8 +52,6 @@ Token* tokenize();
 //parser
 //
 
-extern Node* code[100];
-
 typedef enum {
   ND_ADD, // +
   ND_SUB, // -
@@ -65,6 +63,8 @@ typedef enum {
   ND_LE, //<=
   ND_NUM, // Integer
   ND_ASSIGN, //assignment
+  ND_LVAR, //local variant
+  ND_RETURN, //return
 } NodeKind;
 
 // AST node type
@@ -74,7 +74,20 @@ struct Node {
   Node *lhs;     // Left-hand side
   Node *rhs;     // Right-hand side
   int val;       // Used if kind == ND_NUM
+  int offset;    // Used if kind == ND_LVAR
 };
+
+typedef struct LVar LVar;
+
+//type for local variable
+struct LVar{
+  LVar* next; //次の変数 or NULL
+  char* name; //変数の名前
+  int len; //変数名の長さ
+  int offset; //RBPからのオフセット
+};
+
+extern LVar* locals;
 
 Node* new_node(NodeKind kind);
 Node* new_binary(NodeKind kind, Node* lhs, Node* rhs);
@@ -88,7 +101,9 @@ Node* add();
 Node* mul();
 Node* unary();
 Node* primary();
+void program();
 
+extern Node* code[100];
 
 //
 //code generator

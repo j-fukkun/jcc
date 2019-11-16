@@ -48,12 +48,13 @@ bool consume(char* op){
 } //consume()
 
 
-bool consume_ident(){
+Token* consume_ident(){
   if(token->kind != TK_IDENT){
-    return false;
+    return NULL;
   } //if
+  Token* t = token;
   token = token->next;
-  return true;
+  return t;
 } //consume_ident()
 
 
@@ -105,9 +106,34 @@ Token* new_token(TokenKind kind, Token *cur, char *str, int len){
   return tok;
 }
 
+bool is_alphabet(char c){
+  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
+} //is_alphabet()
+
+bool is_alphabet_or_number(char c){
+  return is_alphabet(c) || ('0' <= c && c <= '9');
+} //is_alphabet_or_number()
+
 bool startswith(char* p, char* q){
   return (memcmp(p, q, strlen(q)) == 0);
 }
+
+char* startswith_reserved(char* p){
+  //keyword
+  char* kw[] = {"return","if","else","while","for",
+                "int","char","short","long","void",
+		"break","continue","switch","case","goto",
+                "default","do"};
+  int i = 0;
+  for(i = 0; i < sizeof(kw) / sizeof(*kw); i++){
+    int len = strlen(kw[i]);
+    if(startswith(p, kw[i]) && !is_alphabet_or_number(p[len])){
+      return kw[i];
+    } //if
+  } //for
+  return NULL;
+  
+} //startswith_reserved()
 
 /*入力文字列pをトークナイズしてそれを返す*/
 Token* tokenize(){
@@ -134,7 +160,7 @@ Token* tokenize(){
 
     //一つの文字を区切る
     //single-letter
-    if (strchr("+-*/()<>", *p)){
+    if (strchr("+-*/()<>=;", *p)){
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     } //if single-letter
@@ -149,12 +175,24 @@ Token* tokenize(){
       continue;
     } //if integer
 
-    //identifier
-    if('a' <= *p && *p <= 'z'){
-      cur = new_token(TK_IDENT, cur, p++);
-      cur->len = 1;
+    //for keywords
+    char* kw = startswith_reserved(p);
+    if(kw){
+      int len = strlen(kw);
+      cur = new_token(TK_RESERVED, cur, p, len);
+      p += len;
       continue;
-    } //if identifier
+    } //if
+
+    //identifier
+    if(is_alphabet(*p)){
+      char* q = p++;
+      while(is_alphabet_or_number(*p)){
+	p++;
+      } //while
+      cur = new_token(TK_IDENT, cur, q, p-q);
+      continue;
+    } //if is_alphabet
 
     /*error("invalid token");*/
     error_at(p, "invalid token");
@@ -168,6 +206,18 @@ Token* tokenize(){
 //
 //parser
 //
+
+LVar* locals = NULL;
+
+LVar* find_lvar(Token* tok){
+  LVar* var = locals;
+  for(var; var; var = var->next){
+    if(var->len == tok->len && !memcmp(tok->str, var->name, var->len)){
+      return var;
+    } //if
+  } //for
+  return NULL;
+} //find_lvar()
 
 Node* new_node(NodeKind kind){
   Node *node = calloc(1, sizeof(Node));
@@ -188,19 +238,27 @@ Node* new_num(int val){
   return node;
 }
 
+// program = stmt*
+void program(){
+  int i = 0;
+  while(!at_eof()){
+    code[i++] = stmt();
+  }
+  code[i] = NULL;
+} //program()
 
-//assign = equality ("=" assign)?
-Node* assign(){
-  Node* node = equality();
-  if(consume("=")){
-    node = new_node(ND_ASSIGN, node, assign());
-  } //if
-  return node;
-} //assign()
-
-//stmt = expr ";"
+//stmt = expr ";" | "return" expr ";"
 Node* stmt(){
-  Node* node = expr();
+  Node* node;
+
+  if(consume("return")){
+    node = calloc(1, sizeof(node));
+    node->kind = ND_RETURN;
+    node->lhs = expr();
+  } else {
+    node = expr();
+  } //if
+  
   expect(";");
   return node;
 } //stmt()
@@ -209,6 +267,15 @@ Node* stmt(){
 Node *expr() {
   return assign();
 }
+
+//assign = equality ("=" assign)?
+Node* assign(){
+  Node* node = equality();
+  if(consume("=")){
+    node = new_binary(ND_ASSIGN, node, assign());
+  } //if
+  return node;
+} //assign()
 
 
 //equality = relational ("==" relational | "!=" relational)*
@@ -301,9 +368,33 @@ Node *primary() {
     return node;
   } //if
 
-  if(consume_ident()){
-    new_token();
+  Token* tok = consume_ident();
+  if(tok){
+    Node* node = calloc(1, sizeof(Node));
+    node->kind = ND_LVAR;
+
+    LVar* lvar = find_lvar(tok);
+    if(lvar){
+      node->offset = lvar->offset;
+    } else {
+      lvar = calloc(1, sizeof(LVar));
+      lvar->next = locals;
+      lvar->name = tok->str;
+      lvar->len = tok->len;
+      //lvar->offset = locals->offset + 8;
+      if(locals){
+	lvar->offset = locals->offset + 8;
+      } else {
+	lvar->offset = 8;
+      } //if
+      node->offset = lvar->offset;
+      locals = lvar;
+    } //if
+    return node;
   } //if
 
   return new_num(expect_number());
 } //primary()
+
+
+
