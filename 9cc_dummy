@@ -85,7 +85,7 @@ void expect(char* op){
 
 //次のトークンが数値の場合、トークンを一つ読み進めて、その数値を返す。
 //それ以外の場合には、エラーを報告する
-int expect_number() {
+int expect_number(){
   if (token->kind != TK_NUM){
     /*error("数ではありません");*/
     error_at(token->str, "expected a number");
@@ -95,12 +95,12 @@ int expect_number() {
   return val;
 }
 
-bool at_eof() {
+bool at_eof(){
   return token->kind == TK_EOF;
 }
 
 /*新しいトークンを作成してcurにつなげる*/
-Token* new_token(TokenKind kind, Token *cur, char *str, int len) {
+Token* new_token(TokenKind kind, Token *cur, char *str, int len){
   Token *tok = calloc(1, sizeof(Token));
   tok->kind = kind;
   tok->str = str;
@@ -114,7 +114,7 @@ bool startswith(char* p, char* q){
 }
 
 /*入力文字列pをトークナイズしてそれを返す*/
-Token* tokenize() {
+Token* tokenize(){
   char* p = user_input;
   Token head;
   head.next = NULL;
@@ -200,7 +200,7 @@ Node* new_binary(NodeKind kind, Node* lhs, Node* rhs){
   return node;
 }
 
-Node* new_num(int val) {
+Node* new_num(int val){
   Node *node = new_node(ND_NUM);
   node->val = val;
   return node;

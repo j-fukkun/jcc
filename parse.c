@@ -248,6 +248,9 @@ void program(){
 } //program()
 
 //stmt = expr ";" | "return" expr ";"
+//      | "if" "(" expr ")" stmt ("else" stmt)?
+//      | "while" "(" expr ")" stmt
+//      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 Node* stmt(){
   Node* node;
 
