@@ -143,7 +143,7 @@ Token* tokenize(){
   Token *cur = &head;
 
   while (*p) {
-    //空白文字をスキップ
+    //空白文字と改行をスキップ
     if (isspace(*p)) {
       p++;
       continue;
@@ -247,7 +247,7 @@ void program(){
   code[i] = NULL;
 } //program()
 
-//stmt = expr ";" | "return" expr ";"
+//stmt = expr ";" | "return" expr? ";"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
 //      | "while" "(" expr ")" stmt
 //      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
@@ -255,15 +255,37 @@ Node* stmt(){
   Node* node;
 
   if(consume("return")){
-    node = calloc(1, sizeof(node));
+    if(consume(";")){
+      //"return" ";"
+      node = new_node(ND_RETURN);
+      return node;
+    }
+    //"return" expr ";"
+    node = calloc(1, sizeof(Node));
     node->kind = ND_RETURN;
     node->lhs = expr();
-  } else {
-    node = expr();
+    expect(";");
+    return node;
   } //if
-  
+
+  if(consume("if")){
+    //"if" "(" expr ")" stmt ("else" stmt)?
+    node = new_node(ND_IF);
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    node->then = stmt();
+    if(consume("else")){
+      node->els = stmt();
+    }
+    return node;    
+  } //if
+
+  //expr ";"
+  node = expr();
   expect(";");
   return node;
+  
 } //stmt()
 
 // expr = assign
