@@ -247,7 +247,8 @@ void program(){
   code[i] = NULL;
 } //program()
 
-//stmt = expr ";" | "return" expr? ";"
+//stmt = expr ";"
+//      | "return" expr? ";"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
 //      | "while" "(" expr ")" stmt
 //      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
@@ -279,7 +280,43 @@ Node* stmt(){
       node->els = stmt();
     }
     return node;    
-  } //if
+  } //if "if"
+
+  if(consume("while")){
+    //"while" "(" expr ")" stmt
+    node = new_node(ND_WHILE);
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    node->then = stmt();
+    return node;
+  } //if "while"
+
+  if(consume("for")){
+    //"for" "(" expr? ";" expr? ";" expr? ")" stmt
+    node = new_node(ND_FOR);
+    expect("(");
+    //1個目
+    if(!consume(";")){
+      //先読みして、";"ではなかったとき
+      node->init = expr();
+      expect(";");
+    } //if(!consume(";"))
+
+    //2個目
+    if(!consume(";")){
+      node->cond = expr();
+      expect(";");
+    } //if(!consume(";"))
+
+    //3個目
+    if(!consume(")")){
+      node->inc = expr();
+      expect(")");
+    } //if(!consume(")"))
+    node->then = stmt();
+    return node;
+  } //if "for"
 
   //expr ";"
   node = expr();

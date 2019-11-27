@@ -65,6 +65,9 @@ typedef enum {
   ND_ASSIGN, //assignment
   ND_LVAR, //local variant
   ND_RETURN, //return
+  ND_IF, //if
+  ND_WHILE, //while
+  ND_FOR, //for
 } NodeKind;
 
 // AST node type
@@ -75,10 +78,17 @@ struct Node {
   Node *rhs;     // Right-hand side
   int val;       // Used if kind == ND_NUM
   int offset;    // Used if kind == ND_LVAR
+
+  //"if","while","for"
+  Node* cond;
+  Node* then;
+  Node* els;
+  Node* init; //for
+  Node* inc; //for
 };
 
-typedef struct LVar LVar;
 
+typedef struct LVar LVar;
 //type for local variable
 struct LVar{
   LVar* next; //次の変数 or NULL

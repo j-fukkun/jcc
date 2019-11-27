@@ -4,6 +4,8 @@
 // code generator
 //
 
+static int labelseq = 1;
+
 void gen_lval(Node* node){
   if(node->kind != ND_LVAR){
     error("代入の左辺値が変数ではありません");
@@ -16,7 +18,7 @@ void gen_lval(Node* node){
 } //gen_lval()
 
 void gen(Node *node){
-
+  /*
   if(node->kind == ND_RETURN){
     gen(node->lhs);
     printf("  pop rax\n");
@@ -25,6 +27,7 @@ void gen(Node *node){
     printf("  ret\n");
     return;
   } //if
+  */
   
   switch(node->kind) {
   case ND_NUM:
@@ -45,10 +48,77 @@ void gen(Node *node){
     printf("  mov [rax], rdi\n");
     printf("  push rdi\n");
     return;
+  case ND_RETURN:
+    if(node->lhs){
+      gen(node->lhs);
+      printf("  pop rax\n");
+    } //if
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
+    printf("  ret\n");
+    return;
+  case ND_IF:
+    int seq = labelseq++;
+    if(node->els){
+      //"if" (cond) stmt "else" stmtのとき
+      gen(node->cond);
+      printf("  pop rax\n"); //スタックトップの計算結果をraxにpop
+      printf("  cmp rax, 0\n");
+      printf("  je  .L.else.%d\n", seq);
+      gen(node->then);
+      printf("  jmp .L.end.%d\n", seq);
+      printf(".L.else.%d:\n", seq);
+      gen(node->els);
+      printf(".L.end.%d:\n", seq);
+    } else {
+      //"if" (cond) stmtのとき
+      gen(node->cond);
+      printf("  pop rax\n"); //スタックトップの計算結果をraxにpop
+      printf("  cmp rax, 0\n");
+      printf("  je  .L.end.%d\n",seq);
+      gen(node->then);
+      printf(".L.end.%d:\n",seq);
+    } //if
+    return;
+  case ND_WHILE:
+    int seq = labelseq++;
+    printf(".L.begin.%d:\n", seq);
+    gen(node->cond);
+    printf("  pop rax\n"); //スタックトップの計算結果をraxにpop
+    printf("  cmp rax, 0\n");
+    printf("  je  .L.end.%d\n", seq);
+    gen(node->then);
+    printf("  jmp .L.begin.%d\n", seq);
+    printf(".L.end.%d:\n", seq);
+    return;
+  case ND_FOR:
+    int seq = labelseq++;
+    if(node->init){
+      gen(node->init);
+    } //if
+    printf(".L.begin.%d:\n", seq);
+    if(node->cond){
+      gen(node->cond);
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je  .L.end.%d\n", seq);
+    } //if
+    
+    gen(node->then);
+    
+    if(node->inc){
+      gen(node->inc);
+    } //if
+    printf("  jmp .L.begin.%d\n", seq);
+    printf(".L.end.%d:\n", seq);
+    return;
+    
+    
   }  //switch
 
   gen(node->lhs);
   gen(node->rhs);
+  
 
   printf("  pop rdi\n");
   printf("  pop rax\n");
