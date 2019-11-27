@@ -57,7 +57,7 @@ void gen(Node *node){
     printf("  pop rbp\n");
     printf("  ret\n");
     return;
-  case ND_IF:
+  case ND_IF: {
     int seq = labelseq++;
     if(node->els){
       //"if" (cond) stmt "else" stmtのとき
@@ -80,7 +80,8 @@ void gen(Node *node){
       printf(".L.end.%d:\n",seq);
     } //if
     return;
-  case ND_WHILE:
+  } //case ND_IF
+  case ND_WHILE: {
     int seq = labelseq++;
     printf(".L.begin.%d:\n", seq);
     gen(node->cond);
@@ -91,7 +92,8 @@ void gen(Node *node){
     printf("  jmp .L.begin.%d\n", seq);
     printf(".L.end.%d:\n", seq);
     return;
-  case ND_FOR:
+  } //case ND_WHILE
+  case ND_FOR: {
     int seq = labelseq++;
     if(node->init){
       gen(node->init);
@@ -112,7 +114,7 @@ void gen(Node *node){
     printf("  jmp .L.begin.%d\n", seq);
     printf(".L.end.%d:\n", seq);
     return;
-    
+  } //case ND_FOR
     
   }  //switch
 
