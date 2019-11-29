@@ -111,11 +111,36 @@ void gen(Node* node){
 
     while(n){
       gen(n);
-      printf("  pop rax\n");
+      
+      //gen(n)では、スタックトップに１つ値を残す
+      //それを毎回popした方が良い?
+      //printf("  pop rax\n");
       n = n->next;
     } //while
     return;
   } //case ND_BLOCK
+
+  case ND_FUNCALL: {
+    //関数呼び出しする前に、RSPが16の倍数でなければならない
+    int seq = labelseq++;
+    printf("  mov rax, rsp\n");
+    printf("  and rax, 15\n"); //15(1111)とand演算
+    //16は(0001 0000)なので、15とand演算すると、0になる
+    //演算結果が0のとき、ZFには1がセットされる
+    printf("  jnz .L.call.%d\n", seq); //ZF(Zero Flag) = 0のときにjump
+    printf("  mov rax, 0\n");
+    printf("  call %s\n", node->funcname);
+    printf("  jmp .L.end.%d\n", seq);
+    printf(".L.call.%d:\n", seq); //RSPが16の倍数ではないとき
+    printf("  sub rsp, 8\n");
+    printf("  mov rax, 0\n");
+    printf("  call %s\n", node->funcname);
+    printf("  add rsp, 8\n");
+    printf(".L.end.%d:\n", seq);
+    printf("  push rax\n");
+    return;
+  } //case ND_FUNCALL
+    
     
   }  //switch
 

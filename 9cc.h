@@ -69,6 +69,7 @@ typedef enum {
   ND_WHILE, //while
   ND_FOR, //for
   ND_BLOCK, //block { ... }
+  ND_FUNCALL, //function call
 } NodeKind;
 
 // AST node type
@@ -90,6 +91,10 @@ struct Node {
   //block
   Node* body; 
   Node* next;
+
+  //function call
+  char* funcname; //function name
+  
 };
 
 
