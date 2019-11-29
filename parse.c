@@ -160,7 +160,7 @@ Token* tokenize(){
 
     //一つの文字を区切る
     //single-letter
-    if (strchr("+-*/()<>=;", *p)){
+    if (strchr("+-*/()<>=;{}", *p)){
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     } //if single-letter
@@ -248,6 +248,7 @@ void program(){
 } //program()
 
 //stmt = expr ";"
+//      | "{" stmt* "}"
 //      | "return" expr? ";"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
 //      | "while" "(" expr ")" stmt
@@ -317,6 +318,21 @@ Node* stmt(){
     node->then = stmt();
     return node;
   } //if "for"
+
+  if(consume("{")){
+    //"{" stmt* "}"
+    Node head = {};
+    Node* curr = &head;
+    
+    while(!consume("}")){
+      curr->next = stmt();
+      curr = curr->next;
+    } //while
+
+    node = new_node(ND_BLOCK);
+    node->body = head.next;
+    return node;    
+  } //if(consume("{"))
 
   //expr ";"
   node = expr();

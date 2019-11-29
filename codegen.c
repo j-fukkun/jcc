@@ -17,18 +17,8 @@ void gen_lval(Node* node){
   
 } //gen_lval()
 
-void gen(Node *node){
-  /*
-  if(node->kind == ND_RETURN){
-    gen(node->lhs);
-    printf("  pop rax\n");
-    printf("  mov rsp, rbp\n");
-    printf("  pop rbp\n");
-    printf("  ret\n");
-    return;
-  } //if
-  */
-  
+void gen(Node* node){
+    
   switch(node->kind) {
   case ND_NUM:
     printf("  push %d\n", node->val);
@@ -115,6 +105,17 @@ void gen(Node *node){
     printf(".L.end.%d:\n", seq);
     return;
   } //case ND_FOR
+
+  case ND_BLOCK: {
+    Node* n = node->body;
+
+    while(n){
+      gen(n);
+      printf("  pop rax\n");
+      n = n->next;
+    } //while
+    return;
+  } //case ND_BLOCK
     
   }  //switch
 

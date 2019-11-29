@@ -48,5 +48,6 @@ try 5 'hoge = 5;'
 try 15 'return 10+5;'
 try 10 'a = 10; if(a <= 10) a = 10;'
 try 10 'a = 0; b = 0; for(a = 0; a < 10; a = a + 1) b = b + 1;'
+try 10 'a = 0; b = 0; for(a = 0; a < 10; a = a + 1){ b=b+1;}'
 
 echo OK
