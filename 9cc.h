@@ -94,7 +94,7 @@ struct Node {
 
   //function call
   char* funcname; //function name
-  
+  Node* args;
 };
 
 

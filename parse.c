@@ -160,7 +160,7 @@ Token* tokenize(){
 
     //一つの文字を区切る
     //single-letter
-    if (strchr("+-*/()<>=;{}", *p)){
+    if (strchr("+-*/()<>=;{},", *p)){
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     } //if single-letter
@@ -438,6 +438,24 @@ Node* unary(){
 } //urary()
 
 
+Node* func_args(){
+
+  if(consume(")")){
+    //引数がないとき
+    return NULL;
+  }
+
+  Node* head = assign();
+  Node* curr = head;
+  while(consume(",")){
+    curr->next = assign();
+    curr = curr->next;
+  } //while
+  expect(")");
+  return head;
+  
+} //func_args()
+
 // primary = "(" expr ")"
 //           | num
 //           | ident ("(" ")")?
@@ -456,9 +474,7 @@ Node *primary() {
       
       Node* node = new_node(ND_FUNCALL);
       node->funcname = strndup(tok->str, tok->len); //文字列複製
-      //node->args = func_args();
-
-      expect(")");
+      node->args = func_args();
       return node;
     } //if(consume("("))
     

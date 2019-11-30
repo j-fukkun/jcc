@@ -6,6 +6,9 @@
 
 static int labelseq = 1;
 
+//関数呼び出しの引数の順番
+static char* argreg8[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
 void gen_lval(Node* node){
   if(node->kind != ND_LVAR){
     error("代入の左辺値が変数ではありません");
@@ -114,7 +117,7 @@ void gen(Node* node){
       
       //gen(n)では、スタックトップに１つ値を残す
       //それを毎回popした方が良い?
-      //printf("  pop rax\n");
+      printf("  pop rax\n");
       n = n->next;
     } //while
     return;
@@ -122,6 +125,21 @@ void gen(Node* node){
 
   case ND_FUNCALL: {
     //関数呼び出しする前に、RSPが16の倍数でなければならない
+
+    int num_args = 0;
+    Node* arg = node->args;
+    for(arg; arg; arg = arg->next){
+      gen(arg);
+      num_args++;
+    } //for
+
+    int i = num_args - 1;
+    for(i; i >= 0; i--){
+      //ABIの規定通りに、引数をレジスタに格納する
+      //6個より多い引数は、サポートしていない
+      printf("  pop %s\n", argreg8[i]);
+    } //for
+    
     int seq = labelseq++;
     printf("  mov rax, rsp\n");
     printf("  and rax, 15\n"); //15(1111)とand演算
