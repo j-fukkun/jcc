@@ -9,6 +9,9 @@ static int labelseq = 1;
 //関数呼び出しの引数の順番
 static char* argreg8[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
+static char* funcname;
+
+
 void gen_lval(Node* node){
   if(node->kind != ND_LVAR){
     error("代入の左辺値が変数ではありません");
@@ -46,9 +49,7 @@ void gen(Node* node){
       gen(node->lhs);
       printf("  pop rax\n");
     } //if
-    printf("  mov rsp, rbp\n");
-    printf("  pop rbp\n");
-    printf("  ret\n");
+    printf("  jmp .L.return.%s\n", funcname);
     return;
   case ND_IF: {
     int seq = labelseq++;
@@ -207,3 +208,52 @@ void gen(Node* node){
 
   printf("  push rax\n");
 } //gen()
+
+void emit_text(Program* prog){
+
+  printf(".text\n");
+
+  Function* fn = prog->fns;
+  for(fn; fn; fn = fn->next){
+    printf(".global %s\n", fn->name);
+    printf("%s:\n", fn->name);
+    funcname = fn->name;
+
+    //プロローグ
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+    printf("  sub rsp, %d\n", fn->stack_size);
+
+    //関数の引数をスタック領域に格納
+    int i = 0;
+    LVar* lvar = fn->params;
+    for(lvar; lvar; lvar = lvar->next){
+      printf("  mov [rbp-%d], %s\n", lvar->offset, argreg8[i]);
+      i++;
+    } //for
+
+    //generate code from AST
+    Node* n = fn->node;
+    for(n; n; n = n->next){
+      gen(n);
+    } //for
+
+    //エピローグ
+    printf(".L.return.%s:\n", funcname);
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
+    printf("  ret\n");
+    
+  } //for fn
+  
+
+} //emit_text()
+
+
+void codegen(Program* prog){
+
+  printf(".intel_syntax noprefix\n");
+
+  emit_text(prog);
+
+} //codegen()

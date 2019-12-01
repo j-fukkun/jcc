@@ -3,10 +3,8 @@
 //input program
 char* user_input;
 
-/*current token*/
+//current token
 Token *token;
-
-Node* code[100];
 
 int main(int argc, char **argv){
   if(argc != 2){
@@ -17,37 +15,23 @@ int main(int argc, char **argv){
   /*tokenize*/
   user_input = argv[1];
   token = tokenize();
-  //Node* node = expr();
-  program();
-  
-  /*アセンブリの前半部分を出力*/
-  printf(".intel_syntax noprefix\n");
-  printf(".global main\n");
-  printf("main:\n");
+  Program* prog = program();
 
-  //プロローグ
-  //変数26個文の領域を確保する
-  printf("  push rbp\n");;
-  printf("  mov rbp, rsp\n");
-  printf("  sub rsp, 208\n");
 
-  int i = 0;
-  for(i = 0; code[i]; i++){
-    gen(code[i]);
-
-    //式の評価結果としてスタックに一つの値が残っているはず
-    //スタックが溢れないように、ポップしておく
-    printf("  pop rax\n");
+  //スタックサイズを計算
+  //すべての変数を、とりあえず、8バイトとする
+  Function* fn = prog->fns;
+  for(fn; fn; fn = fn->next){
+    int offset = 0;
+    LVar* lvar = fn->locals;
+    for(lvar; lvar; lvar = lvar->next){
+      offset += 8;
+    } //for
+    fn->stack_size = offset;
   } //for
 
-  //エピローグ
-  //最後の式の結果がRAXに残っているので、それが返り値になる
-  printf("  mov rsp, rbp\n");
-  printf("  pop rbp\n");
-  printf("  ret\n");
-
-  //printf("  pop rax\n");
-  //printf("  ret\n");
+  //emit assembly code
+  codegen(prog);
+  
   return 0;
-
 } //main

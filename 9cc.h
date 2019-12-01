@@ -40,11 +40,16 @@ extern Token *token;
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 bool consume(char* op);
+Token* consume_ident();
 void expect(char* op);
 int expect_number();
+char* expect_ident();
 bool at_eof();
 Token* new_token(TokenKind kind, Token *cur, char *str, int len);
+bool is_alphabet(char c);
+bool is_alphabet_or_number(char c);
 bool startswith(char* p, char* q);
+char* startswith_reserved(char* p);
 Token* tokenize();
 
 
@@ -107,6 +112,23 @@ struct LVar{
   int offset; //RBPからのオフセット
 };
 
+typedef struct Function Function;
+struct Function{
+  Function* next;
+  char* name;
+  LVar* params;
+
+  Node* node; //function body
+  LVar* locals; //local variables in function
+  int stack_size;
+};
+
+typedef struct Program Program;
+struct Program{
+  Function* fns;
+};
+
+
 extern LVar* locals;
 
 Node* new_node(NodeKind kind);
@@ -121,14 +143,15 @@ Node* add();
 Node* mul();
 Node* unary();
 Node* primary();
-void program();
+Program* program();
+Function* function();
 
-extern Node* code[100];
+
 
 //
 //code generator
 //
-void gen(Node *node);
+void codegen(Program* prog);
 
 
 
