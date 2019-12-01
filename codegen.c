@@ -4,11 +4,13 @@
 // code generator
 //
 
+//ラベルの番号
 static int labelseq = 1;
 
 //関数呼び出しの引数の順番
 static char* argreg8[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
+//現在の関数名
 static char* funcname;
 
 
@@ -16,7 +18,7 @@ void gen_lval(Node* node){
   if(node->kind != ND_LVAR){
     error("代入の左辺値が変数ではありません");
   }
-
+  //nodeが表す変数のアドレスを計算し、スタックにプッシュ
   printf("  mov rax, rbp\n");
   printf("  sub rax, %d\n", node->offset);
   printf("  push rax\n");
@@ -159,6 +161,21 @@ void gen(Node* node){
     printf("  push rax\n");
     return;
   } //case ND_FUNCALL
+
+  case ND_ADDR: { //address &
+    gen_lval(node->lhs);
+    return;
+  } //case ND_ADDR
+
+  case ND_DEREF: { //dereferrence *
+    gen(node->lhs);
+    //node->lhsの結果がスタックトップにあるはずなので
+    //raxにpop
+    printf("  pop rax\n");
+    printf("  mov rax, [rax]\n"); //raxが指すアドレスから値をロード
+    printf("  push rax\n");
+    return;
+  } //case ND_DEREF
     
     
   }  //switch
