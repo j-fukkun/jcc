@@ -85,6 +85,17 @@ char* expect_ident(){
   return s;
 } //expect_ident()
 
+//current tokenが引数と同じ文字列のときに、current tokenを返す
+//トークンは進めない
+Token* peek(char* s){
+  if(token->kind != TK_RESERVED
+     || strlen(s) != token->len
+     || strncmp(token->str, s, token->len)){
+    return NULL;
+  }
+  return token;
+} //peek()
+
 
 bool at_eof(){
   return token->kind == TK_EOF;

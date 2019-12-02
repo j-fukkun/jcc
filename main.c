@@ -26,6 +26,7 @@ int main(int argc, char **argv){
     LVar* lvar = fn->locals;
     for(lvar; lvar; lvar = lvar->next){
       offset += 8;
+      lvar->offset = offset;
     } //for
     fn->stack_size = offset;
   } //for

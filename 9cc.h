@@ -44,6 +44,7 @@ Token* consume_ident();
 void expect(char* op);
 int expect_number();
 char* expect_ident();
+Token* peek(char* s);
 bool at_eof();
 Token* new_token(TokenKind kind, Token *cur, char *str, int len);
 bool is_alphabet(char c);
@@ -77,7 +78,17 @@ typedef enum {
   ND_FUNCALL, //function call
   ND_DEREF, //dereferrence *
   ND_ADDR, //address &
+  ND_NULL, //コード生成しない
 } NodeKind;
+
+typedef struct LVar LVar;
+//type for local variable
+struct LVar{
+  LVar* next; //次の変数 or NULL
+  char* name; //変数の名前
+  int len; //変数名の長さ
+  int offset; //RBPからのオフセット
+};
 
 // AST node type
 typedef struct Node Node;
@@ -101,18 +112,11 @@ struct Node {
 
   //function call
   char* funcname; //function name
-  Node* args;
+  Node* args; //関数呼び出しのときの引数
+
+  LVar* lvar;
 };
 
-
-typedef struct LVar LVar;
-//type for local variable
-struct LVar{
-  LVar* next; //次の変数 or NULL
-  char* name; //変数の名前
-  int len; //変数名の長さ
-  int offset; //RBPからのオフセット
-};
 
 typedef struct Function Function;
 struct Function{

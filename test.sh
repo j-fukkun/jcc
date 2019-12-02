@@ -17,7 +17,7 @@ try(){
     fi   
 }
 
-try 10 'kaijo(a){ b = a * kaijo(a-1); return b;}'
+try 10 'int main(){int hoge; hoge = 10; return hoge;}'
 
 
 echo OK

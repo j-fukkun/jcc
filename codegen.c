@@ -20,7 +20,7 @@ void gen_lval(Node* node){
   }
   //nodeが表す変数のアドレスを計算し、スタックにプッシュ
   printf("  mov rax, rbp\n");
-  printf("  sub rax, %d\n", node->offset);
+  printf("  sub rax, %d\n", node->lvar->offset);
   printf("  push rax\n");
   
 } //gen_lval()
@@ -28,6 +28,8 @@ void gen_lval(Node* node){
 void gen(Node* node){
     
   switch(node->kind) {
+  case ND_NULL:
+    return;
   case ND_NUM:
     printf("  push %d\n", node->val);
     return;
