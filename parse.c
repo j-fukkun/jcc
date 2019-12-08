@@ -36,11 +36,12 @@ Node* new_num(int val){
 }
 
 //ローカル変数のnew
-LVar* new_lvar(char* name){
+LVar* new_lvar(char* name, Type* type){
   LVar* lvar = calloc(1, sizeof(LVar));
   lvar->next = locals;
   lvar->name = name;
   lvar->len = strlen(name);
+  lvar->type = type;
   locals = lvar;
   return lvar;
 } //new_lvar
@@ -74,35 +75,32 @@ Program* program(){
   
 } //program()
 
-//basetype = int
-void basetype(){
+//basetype = "int" "*"*
+Type* basetype(){
 
   expect("int");
-  
+  Type* type = int_type;
+  while(consume("*")){
+    type = pointer_to(type);
+  }
+  return type;
 } //basetype()
 
 //param = basetype ident
 LVar* read_func_param(){
 
-  basetype();
+  Type* type =  basetype();
   Token* tok = consume_ident();
   if(tok){
+    /*
     LVar* lvar = calloc(1, sizeof(LVar));
-    
     lvar->next = locals;
     lvar->name = tok->str;
     lvar->len = tok->len;
-    /*
-    if(locals){
-      lvar->offset = locals->offset + 8;
-    } else {
-      lvar->offset = 8;
-    } //if
-    */
-    //node->offset = lvar->offset;
     locals = lvar;
-    
     return lvar;
+    */
+    return new_lvar(tok->str, type);
   } //if(tok)
   
   return NULL;
@@ -135,7 +133,7 @@ Function* function(){
   
   locals = NULL;
 
-  basetype();
+  Type* type = basetype();
   char* name = expect_ident();
   Function* fn = calloc(1, sizeof(Function));
   fn->name = name;
@@ -168,11 +166,11 @@ bool is_typename(){
 //declaration = basetype ident ";"
 Node* declaration(){
 
-  basetype();
+  Type* type = basetype();
   char* name = expect_ident();
   expect(";");
 
-  LVar* lvar = new_lvar(name);
+  LVar* lvar = new_lvar(name, type);
   return new_node(ND_NULL); //変数宣言では、コード生成はしない
     
 } //declaration()

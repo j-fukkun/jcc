@@ -81,6 +81,8 @@ typedef enum {
   ND_NULL, //コード生成しない
 } NodeKind;
 
+typedef struct Type Type;
+
 typedef struct LVar LVar;
 //type for local variable
 struct LVar{
@@ -88,6 +90,7 @@ struct LVar{
   char* name; //変数の名前
   int len; //変数名の長さ
   int offset; //RBPからのオフセット
+  Type* type;
 };
 
 // AST node type
@@ -97,7 +100,7 @@ struct Node {
   Node *lhs;     // Left-hand side
   Node *rhs;     // Right-hand side
   int val;       // Used if kind == ND_NUM
-  int offset;    // Used if kind == ND_LVAR
+  //int offset;    // Used if kind == ND_LVAR
 
   //"if","while","for"
   Node* cond;
@@ -114,7 +117,9 @@ struct Node {
   char* funcname; //function name
   Node* args; //関数呼び出しのときの引数
 
-  LVar* lvar;
+  LVar* lvar; // Used if kind == ND_LVAR
+
+  Type* type; //Type
 };
 
 
@@ -152,6 +157,23 @@ Node* primary();
 Program* program();
 Function* function();
 
+//
+//type.c
+//
+
+extern Type* int_type;
+
+typedef enum{
+  TY_INT,
+  TY_PTR,
+} TypeKind;
+
+struct Type{
+  TypeKind kind;
+  Type* base;    //pointer
+};
+
+Type* pointer_to(Type* base);
 
 
 //
