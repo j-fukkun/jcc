@@ -34,20 +34,16 @@ void gen_address(Node* node){
 } //gen_address()
 
 void load(){
-
   printf("  pop rax\n");
   printf("  mov rax, [rax]\n");
   printf("  push rax\n");
-    
 } //load()
 
 void store(){
-
   printf("  pop rdi\n");
   printf("  pop rax\n");
   printf("  mov [rax], rdi\n");
   printf("  push rdi\n");
-  
 } //store()
 
 void gen(Node* node){
@@ -208,8 +204,22 @@ void gen(Node* node){
   case ND_ADD:
     printf("  add rax, rdi\n");
     break;
+  case ND_PTR_ADD:
+    printf("  imul rdi, %d\n", node->type->base->size);
+    printf("  add rax, rdi\n");
+    break;
   case ND_SUB:
     printf("  sub rax, rdi\n");
+    break;
+  case ND_PTR_SUB:
+    printf("  imul rdi, %d\n", node->type->base->size);
+    printf("  sub rax, rdi\n");
+    break;
+  case ND_PTR_DIFF:
+    printf("  sub rax, rdi\n");
+    printf("  cqo\n");
+    printf("  mov rdi, %d\n", node->type->base->size);
+    printf("  idiv rdi\n");
     break;
   case ND_MUL:
     printf("  imul rax, rdi\n");

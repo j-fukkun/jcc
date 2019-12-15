@@ -128,7 +128,7 @@ char* startswith_reserved(char* p){
   char* kw[] = {"return","if","else","while","for",
                 "int","char","short","long","void",
 		"break","continue","switch","case","goto",
-                "default","do"};
+                "default","do", "sizeof"};
   int i = 0;
   for(i = 0; i < sizeof(kw) / sizeof(*kw); i++){
     int len = strlen(kw[i]);

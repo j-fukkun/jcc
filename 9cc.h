@@ -78,6 +78,9 @@ typedef enum {
   ND_FUNCALL, //function call
   ND_DEREF, //dereferrence *
   ND_ADDR, //address &
+  ND_PTR_ADD, //pointer add
+  ND_PTR_SUB, //pointer sub
+  ND_PTR_DIFF, //pointer difference
   ND_NULL, //コード生成しない
 } NodeKind;
 
@@ -97,8 +100,8 @@ struct LVar{
 typedef struct Node Node;
 struct Node {
   NodeKind kind; // Node kind
-  Node *lhs;     // Left-hand side
-  Node *rhs;     // Right-hand side
+  Node* lhs;     // Left-hand side
+  Node* rhs;     // Right-hand side
   int val;       // Used if kind == ND_NUM
   //int offset;    // Used if kind == ND_LVAR
 
@@ -146,6 +149,7 @@ Node* new_node(NodeKind kind);
 Node* new_binary(NodeKind kind, Node* lhs, Node* rhs);
 Node* new_num(int val);
 Node* stmt();
+Node* stmt2();
 Node* expr();
 Node* assign();
 Node* equality();
@@ -170,10 +174,15 @@ typedef enum{
 
 struct Type{
   TypeKind kind;
+  int size;      //sizeof()
+  int align;
   Type* base;    //pointer
 };
 
+bool is_integer(Type* t);
 Type* pointer_to(Type* base);
+int align_to(int n, int align);
+void add_type(Node* node);
 
 
 //

@@ -175,14 +175,20 @@ Node* declaration(){
     
 } //declaration()
 
-//stmt = expr ";"
+Node* stmt(){
+  Node* node = stmt2();
+  add_type(node);
+  return node;
+} //stmt()
+
+//stmt2 = expr ";"
 //      | "{" stmt* "}"
 //      | "return" expr? ";"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
 //      | "while" "(" expr ")" stmt
 //      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //      | declaration
-Node* stmt(){
+Node* stmt2(){
   Node* node;
 
   if(consume("return")){
@@ -327,6 +333,44 @@ Node* relational(){
   
 } //relational()
 
+Node* new_add(Node* lhs, Node* rhs){
+  add_type(lhs);
+  add_type(rhs);
+  
+  if(is_integer(lhs->type) && is_integer(rhs->type)){
+    return new_binary(ND_ADD, lhs, rhs);
+  }
+  if(lhs->type->base && is_integer(rhs->type)){
+    //左辺がポインタ 右辺がint
+    return new_binary(ND_PTR_ADD, lhs, rhs);
+  }
+  if(is_integer(lhs->type) && rhs->type->base){
+    //左辺がint 右辺がポインタ
+    return new_binary(ND_PTR_ADD, rhs, lhs);
+  }
+  error("invalid operands");
+  
+} //new_add()
+
+Node* new_sub(Node* lhs, Node* rhs){
+  add_type(lhs);
+  add_type(rhs);
+  
+  if(is_integer(lhs->type) && is_integer(rhs->type)){
+    return new_binary(ND_SUB, lhs, rhs);
+  }
+  if(lhs->type->base && is_integer(rhs->type)){
+    //左辺がポインタ 右辺がint
+    return new_binary(ND_PTR_SUB, lhs, rhs);
+  }
+  if(lhs->type->base && rhs->type->base){
+    //左辺がポインタ 右辺がポインタ
+    return new_binary(ND_PTR_DIFF, rhs, lhs);
+  }
+  error("invalid operands");
+  
+} //new_sub()
+
 
 //add = mul ("+" mul | "-" mul)*
 Node* add(){
@@ -334,9 +378,11 @@ Node* add(){
 
   for(;;){
     if(consume("+")){
-      node = new_binary(ND_ADD, node, mul());
+      //node = new_binary(ND_ADD, node, mul());
+      node = new_add(node, mul());
     } else if(consume("-")){
-      node = new_binary(ND_SUB, node, mul());
+      //node = new_binary(ND_SUB, node, mul());
+      node = new_sub(node, mul());
     } else {
       return node;
     } //if
@@ -360,6 +406,7 @@ Node *mul() {
 } //mul()
 
 //unary = ("+" | "-" | "*" | "&")? unary
+//        | "sizeof" unary
 //        | primary
 Node* unary(){
   if(consume("+")){
@@ -378,6 +425,13 @@ Node* unary(){
     node->lhs = unary();
     return node;
   }
+
+  if(consume("sizeof")){
+    Node* node = unary();
+    add_type(node);
+    return new_num(node->type->size);
+  }
+  
   return primary();
 
 } //urary()

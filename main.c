@@ -19,13 +19,13 @@ int main(int argc, char **argv){
 
 
   //スタックサイズを計算
-  //すべての変数を、とりあえず、8バイトとする
   Function* fn = prog->fns;
   for(fn; fn; fn = fn->next){
     int offset = 0;
     LVar* lvar = fn->locals;
     for(lvar; lvar; lvar = lvar->next){
-      offset += 8;
+      //offset = align_to(offset, lvar->type->align);
+      offset += /*lvar->type->size*/8;
       lvar->offset = offset;
     } //for
     fn->stack_size = offset;
