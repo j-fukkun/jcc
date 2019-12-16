@@ -25,7 +25,7 @@ int main(int argc, char **argv){
     LVar* lvar = fn->locals;
     for(lvar; lvar; lvar = lvar->next){
       //offset = align_to(offset, lvar->type->align);
-      offset += /*lvar->type->size*/8;
+      offset += lvar->type->size;
       lvar->offset = offset;
     } //for
     fn->stack_size = offset;

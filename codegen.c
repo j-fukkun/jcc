@@ -33,16 +33,32 @@ void gen_address(Node* node){
   
 } //gen_address()
 
-void load(){
+void load(Type* t){
   printf("  pop rax\n");
-  printf("  mov rax, [rax]\n");
+  
+  //型のサイズによって処理を分ける必要がある
+  if(t->size == 4){
+    printf("  movsxd rax, dword ptr [rax]\n");
+  } else {
+    assert(t->size == 8);
+    printf("  mov rax, [rax]\n");
+  } //if
+  
   printf("  push rax\n");
 } //load()
 
-void store(){
+void store(Type* t){
   printf("  pop rdi\n");
   printf("  pop rax\n");
-  printf("  mov [rax], rdi\n");
+
+  //型のサイズによって処理を分ける必要がある
+  if(t->size == 4){
+    printf("  mov [rax], edi\n");
+  } else {
+    assert(t->size == 8);
+    printf("  mov [rax], rdi\n");
+  } //if
+  
   printf("  push rdi\n");
 } //store()
 
@@ -56,12 +72,12 @@ void gen(Node* node){
     return;
   case ND_LVAR:
     gen_address(node);
-    load();
+    load(node->type);
     return;
   case ND_ASSIGN:
     gen_address(node->lhs);
     gen(node->rhs);
-    store();
+    store(node->type);
     return;
   case ND_RETURN:
     if(node->lhs){
@@ -186,7 +202,7 @@ void gen(Node* node){
 
   case ND_DEREF: { //dereferrence *
     gen(node->lhs);
-    load();
+    load(node->type);
     return;
   } //case ND_DEREF
     
