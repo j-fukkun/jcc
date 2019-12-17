@@ -21,6 +21,13 @@ Type* pointer_to(Type* base){
   return type;
 } //pointer_to()
 
+Type* array_of(Type* base, int size){
+  Type* type = new_type(TY_ARRAY, base->size * size, base->align);
+  type->base = base;
+  type->array_size = size;
+  return type;
+} //array_of()
+
 int align_to(int n, int align){
   return (n + align - 1) & ~(align -1);
 } //align_to()
@@ -70,7 +77,11 @@ void add_type(Node *node) {
     node->type = node->lvar->type;
     return;
   case ND_ADDR: //address &
-    node->type = pointer_to(node->lhs->type);
+    if(node->lhs->type->kind == TY_ARRAY){
+      node->type = pointer_to(node->lhs->type->base);
+    } else {
+      node->type = pointer_to(node->lhs->type);
+    }
     return;
   case ND_DEREF: //dereferrence *
     if(!node->lhs->type->base){

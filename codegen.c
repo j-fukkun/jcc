@@ -7,6 +7,8 @@
 //ラベルの番号
 static int labelseq = 1;
 
+static char* argreg4[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
+
 //関数呼び出しの引数の順番
 static char* argreg8[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
@@ -32,6 +34,15 @@ void gen_address(Node* node){
   error("not an left value");
   
 } //gen_address()
+
+void gen_lval(Node* node){
+  
+  if(node->type->kind == TY_ARRAY){
+    error("not a lvalue");
+  }
+  gen_address(node);
+
+} //gen_lval()
 
 void load(Type* t){
   printf("  pop rax\n");
@@ -72,10 +83,13 @@ void gen(Node* node){
     return;
   case ND_LVAR:
     gen_address(node);
-    load(node->type);
+    //配列はアドレスを計算するだけで良い
+    if(node->type->kind != TY_ARRAY){
+      load(node->type);
+    }
     return;
   case ND_ASSIGN:
-    gen_address(node->lhs);
+    gen_lval(node->lhs);
     gen(node->rhs);
     store(node->type);
     return;
@@ -202,7 +216,10 @@ void gen(Node* node){
 
   case ND_DEREF: { //dereferrence *
     gen(node->lhs);
-    load(node->type);
+    //配列はloadしない
+    if(node->type->kind != TY_ARRAY){
+      load(node->type);
+    }
     return;
   } //case ND_DEREF
     
@@ -269,6 +286,18 @@ void gen(Node* node){
   printf("  push rax\n");
 } //gen()
 
+void load_arg(LVar* lvar, int index){
+
+  int size = lvar->type->size;
+  if(size == 4){
+    printf("  mov [rbp-%d], %s\n", lvar->offset, argreg4[index]);
+  } else {
+    assert(size == 8);
+    printf("  mov [rbp-%d], %s\n", lvar->offset, argreg8[index]);
+  }
+  
+} //load_arg()
+
 void emit_text(Program* prog){
 
   printf(".text\n");
@@ -288,7 +317,8 @@ void emit_text(Program* prog){
     int i = 0;
     LVar* lvar = fn->params;
     for(lvar; lvar; lvar = lvar->next){
-      printf("  mov [rbp-%d], %s\n", lvar->offset, argreg8[i]);
+      //printf("  mov [rbp-%d], %s\n", lvar->offset, argreg8[i]);
+      load_arg(lvar, i);
       i++;
     } //for
 

@@ -128,7 +128,7 @@ char* startswith_reserved(char* p){
   char* kw[] = {"return","if","else","while","for",
                 "int","char","short","long","void",
 		"break","continue","switch","case","goto",
-                "default","do", "sizeof"};
+                "default","do","sizeof"};
   int i = 0;
   for(i = 0; i < sizeof(kw) / sizeof(*kw); i++){
     int len = strlen(kw[i]);
@@ -165,7 +165,7 @@ Token* tokenize(){
 
     //一つの文字を区切る
     //single-letter
-    if (strchr("+-*/()<>=;{},&", *p)){
+    if (strchr("+-*/()<>=;{},&[]", *p)){
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     } //if single-letter

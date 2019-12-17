@@ -149,6 +149,9 @@ extern LVar* locals;
 Node* new_node(NodeKind kind);
 Node* new_binary(NodeKind kind, Node* lhs, Node* rhs);
 Node* new_num(int val);
+Type* type_suffix(Type* type);
+int const_expr();
+int eval(Node* node);
 Node* stmt();
 Node* stmt2();
 Node* expr();
@@ -171,6 +174,7 @@ extern Type* int_type;
 typedef enum{
   TY_INT,
   TY_PTR,
+  TY_ARRAY,
 } TypeKind;
 
 struct Type{
@@ -178,10 +182,12 @@ struct Type{
   int size;      //sizeof()
   int align;
   Type* base;    //pointer
+  int array_size; //size of array
 };
 
 bool is_integer(Type* t);
 Type* pointer_to(Type* base);
+Type* array_of(Type* base, int size);
 int align_to(int n, int align);
 void add_type(Node* node);
 

@@ -9,7 +9,7 @@ LVar* locals = NULL;
 LVar* find_lvar(Token* tok){
   LVar* var = locals;
   for(var; var; var = var->next){
-    if(var->len == tok->len && !memcmp(tok->str, var->name, var->len)){
+    if(var->len == tok->len && !strncmp(tok->str, var->name, var->len)){
       return var;
     } //if
   } //for
@@ -89,18 +89,10 @@ Type* basetype(){
 //param = basetype ident
 LVar* read_func_param(){
 
-  Type* type =  basetype();
+  Type* type = basetype();
   Token* tok = consume_ident();
   if(tok){
-    /*
-    LVar* lvar = calloc(1, sizeof(LVar));
-    lvar->next = locals;
-    lvar->name = tok->str;
-    lvar->len = tok->len;
-    locals = lvar;
-    return lvar;
-    */
-    return new_lvar(tok->str, type);
+    return new_lvar(strndup(tok->str, tok->len), type);
   } //if(tok)
   
   return NULL;
@@ -138,8 +130,10 @@ Function* function(){
   Function* fn = calloc(1, sizeof(Function));
   fn->name = name;
   expect("(");
+  
   read_func_params(fn);
 
+  //error("locals = %s\n", locals->name);
 
   //read function body
   Node head = {};
@@ -163,17 +157,64 @@ bool is_typename(){
 } //is_typename()
 
 
-//declaration = basetype ident ";"
+//declaration = basetype ident type_suffix ";"
 Node* declaration(){
 
   Type* type = basetype();
   char* name = expect_ident();
+
+  //if(expect("[")){
+    type = type_suffix(type);
+    //} //if
+  
   expect(";");
 
   LVar* lvar = new_lvar(name, type);
   return new_node(ND_NULL); //変数宣言では、コード生成はしない
     
 } //declaration()
+
+//type_suffix = ("[" const_expr "]" type_suffix)?
+Type* type_suffix(Type* type){
+  if(!consume("[")){
+    return type;
+  }
+
+  int size = 0;
+  
+  if(!consume("]")){
+    size = const_expr();
+
+    expect("]");
+  } //if
+
+  type = type_suffix(type);
+
+  type = array_of(type, size);
+  
+  return type;
+} //type_suffix()
+
+int const_expr(){
+  return eval(add());
+} //const_expr()
+
+int eval(Node* node){
+  switch(node->kind){
+  case ND_ADD:
+    return eval(node->lhs) + eval(node->rhs);
+  case ND_SUB:
+    return eval(node->lhs) - eval(node->rhs);
+  case ND_MUL:
+    return eval(node->lhs) * eval(node->rhs);
+  case ND_DIV:
+    return eval(node->lhs) / eval(node->rhs);
+  case ND_NUM:
+    return node->val;
+    
+  } //switch()
+  error("not a constant expression");
+}
 
 Node* stmt(){
   Node* node = stmt2();
