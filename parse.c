@@ -29,6 +29,12 @@ Node* new_binary(NodeKind kind, Node* lhs, Node* rhs){
   return node;
 }
 
+Node* new_unary(NodeKind kind, Node* lhs){
+  Node* node = new_node(kind);
+  node->lhs = lhs;
+  return node;
+} //new_unary()
+
 Node* new_num(int val){
   Node *node = new_node(ND_NUM);
   node->val = val;
@@ -448,7 +454,7 @@ Node *mul() {
 
 //unary = ("+" | "-" | "*" | "&")? unary
 //        | "sizeof" unary
-//        | primary
+//        | postfix
 Node* unary(){
   if(consume("+")){
     return unary();
@@ -473,9 +479,29 @@ Node* unary(){
     return new_num(node->type->size);
   }
   
-  return primary();
-
+  return postfix();
+  
 } //urary()
+
+//postfix = primary ("[" expr "]")*
+Node* postfix(){
+
+  Node* node = primary();
+
+  for(;;){
+    if(consume("[")){
+      //a[b] => *(a + b)
+      Node* tmp = new_add(node, expr());
+      expect("]");
+      node = new_unary(ND_DEREF, tmp);
+      continue;
+    } //if "["
+
+    break;
+  } //for
+  
+  return node;
+} //postfix
 
 
 Node* func_args(){

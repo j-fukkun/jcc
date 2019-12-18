@@ -161,6 +161,7 @@ Node* relational();
 Node* add();
 Node* mul();
 Node* unary();
+Node* postfix();
 Node* primary();
 Program* program();
 Function* function();
