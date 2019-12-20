@@ -22,7 +22,7 @@ int main(int argc, char **argv){
   Function* fn = prog->fns;
   for(fn; fn; fn = fn->next){
     int offset = 0;
-    LVar* lvar = fn->locals;
+    Var* lvar = fn->locals;
     for(lvar; lvar; lvar = lvar->next){
       //offset = align_to(offset, lvar->type->align);
       offset += lvar->type->size;

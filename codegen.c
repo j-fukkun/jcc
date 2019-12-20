@@ -21,11 +21,18 @@ void gen(Node* node);
 void gen_address(Node* node){
 
   switch(node->kind){
-  case ND_LVAR:
-    printf("  mov rax, rbp\n");
-    printf("  sub rax, %d\n", node->lvar->offset);
-    printf("  push rax\n");
+  case ND_VAR:{
+    Var* var = node->var;
+
+    if(var->is_local){
+      printf("  mov rax, rbp\n");
+      printf("  sub rax, %d\n", node->var->offset);
+      printf("  push rax\n");
+    } else {
+      printf("  push offset %s\n", var->name);
+    } //if
     return;
+  }
   case ND_DEREF:
     gen(node->lhs);
     return;
@@ -81,7 +88,7 @@ void gen(Node* node){
   case ND_NUM:
     printf("  push %d\n", node->val);
     return;
-  case ND_LVAR:
+  case ND_VAR:
     gen_address(node);
     //配列はアドレスを計算するだけで良い
     if(node->type->kind != TY_ARRAY){
@@ -286,7 +293,20 @@ void gen(Node* node){
   printf("  push rax\n");
 } //gen()
 
-void load_arg(LVar* lvar, int index){
+void emit_data(Program* prog){
+
+  printf(".bss\n");
+
+  Var* gvar = prog->globals;
+  for(gvar; gvar; gvar = gvar->next){
+    printf(".align %d\n", gvar->type->align);
+    printf("%s:\n", gvar->name);
+    printf("  .zero %d\n", gvar->type->size);
+  } //for
+
+} //emit_data()
+
+void load_arg(Var* lvar, int index){
 
   int size = lvar->type->size;
   if(size == 4){
@@ -315,7 +335,7 @@ void emit_text(Program* prog){
 
     //関数の引数をスタック領域に格納
     int i = 0;
-    LVar* lvar = fn->params;
+    Var* lvar = fn->params;
     for(lvar; lvar; lvar = lvar->next){
       //printf("  mov [rbp-%d], %s\n", lvar->offset, argreg8[i]);
       load_arg(lvar, i);
@@ -343,7 +363,7 @@ void emit_text(Program* prog){
 void codegen(Program* prog){
 
   printf(".intel_syntax noprefix\n");
-
+  emit_data(prog);
   emit_text(prog);
 
 } //codegen()

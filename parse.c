@@ -4,10 +4,12 @@
 //parser
 //
 
-LVar* locals = NULL;
+Var* locals = NULL;
+Var* globals = NULL;
 
-LVar* find_lvar(Token* tok){
-  LVar* var = locals;
+
+Var* find_lvar(Token* tok){
+  Var* var = locals;
   for(var; var; var = var->next){
     if(var->len == tok->len && !strncmp(tok->str, var->name, var->len)){
       return var;
@@ -15,6 +17,16 @@ LVar* find_lvar(Token* tok){
   } //for
   return NULL;
 } //find_lvar()
+
+Var* find_gvar(Token* tok){
+  Var* var = globals;
+  for(var; var; var = var->next){
+    if(var->len == tok->len && !strncmp(tok->str, var->name, var->len)){
+      return var;
+    } //if
+  } //for
+  return NULL;
+} //find_gvar()
 
 Node* new_node(NodeKind kind){
   Node *node = calloc(1, sizeof(Node));
@@ -41,45 +53,30 @@ Node* new_num(int val){
   return node;
 }
 
+Var* new_var(char* name, Type* type, bool is_local){
+  Var* var = calloc(1, sizeof(Var));
+  var->name = name;
+  var->len = strlen(name);
+  var->type = type;
+  var->is_local = is_local;
+  return var;
+} //new_var()
+
 //ローカル変数のnew
-LVar* new_lvar(char* name, Type* type){
-  LVar* lvar = calloc(1, sizeof(LVar));
+Var* new_lvar(char* name, Type* type){
+  Var* lvar = new_var(name, type, true);
   lvar->next = locals;
-  lvar->name = name;
-  lvar->len = strlen(name);
-  lvar->type = type;
   locals = lvar;
   return lvar;
-} //new_lvar
+} //new_lvar()
 
-// program = function*
-Program* program(){
-  /*
-  int i = 0;
-  while(!at_eof()){
-    code[i++] = stmt();
-  }
-  code[i] = NULL;
-  */
-
-  Function head = {};
-  Function* curr = &head;
-
-  while(!at_eof()){
-    Function* fn = function();
-    if(!fn){
-      continue;
-    }
-    curr->next = fn;
-    curr = curr->next;
-    continue;
-  } //while()
-
-  Program* prog = calloc(1, sizeof(Program));
-  prog->fns = head.next;
-  return prog;
-  
-} //program()
+//グローバル変数のnew
+Var* new_gvar(char* name, Type* type){
+  Var* gvar = new_var(name, type, false);
+  gvar->next = globals;
+  globals = gvar;
+  return gvar;
+} //new_gvar()
 
 //basetype = "int" "*"*
 Type* basetype(){
@@ -92,8 +89,62 @@ Type* basetype(){
   return type;
 } //basetype()
 
+//determine whether "global_var" or "function"
+bool is_function(){
+  Token* t = token;
+  bool is_func = false;
+
+  Type* type = basetype();
+  char* name = expect_ident();
+  is_func = consume("(");
+
+  token = t;
+  return is_func;  
+} //is_function()
+
+//global_var = basetype ident type_suffix ";"
+void global_var(){
+  
+  Type* type = basetype();
+  char* name = expect_ident();
+  type = type_suffix(type);
+  expect(";");
+  
+  Var* gvar = new_gvar(name, type);
+  
+} //global_var()
+
+// program = (global_var | function)*
+Program* program(){
+ 
+  Function head = {};
+  Function* curr = &head;
+
+  globals = NULL;
+
+  while(!at_eof()){
+    if(is_function()){
+      Function* fn = function();
+      if(!fn){
+	continue;
+      }
+      curr->next = fn;
+      curr = curr->next;
+      continue;
+    } //if
+    global_var();
+  } //while()
+
+  Program* prog = calloc(1, sizeof(Program));
+  prog->globals = globals;
+  prog->fns = head.next;
+  return prog;
+  
+} //program()
+
+
 //param = basetype ident
-LVar* read_func_param(){
+Var* read_func_param(){
 
   Type* type = basetype();
   Token* tok = consume_ident();
@@ -113,7 +164,7 @@ void read_func_params(Function* fn){
   }
 
   fn->params = read_func_param();
-  LVar* curr = fn->params;
+  Var* curr = fn->params;
 
   while(!consume(")")){
     expect(",");
@@ -175,7 +226,7 @@ Node* declaration(){
   
   expect(";");
 
-  LVar* lvar = new_lvar(name, type);
+  Var* lvar = new_lvar(name, type);
   return new_node(ND_NULL); //変数宣言では、コード生成はしない
     
 } //declaration()
@@ -544,20 +595,16 @@ Node *primary() {
       return node;
     } //if(consume("("))
     
-    Node* node = calloc(1, sizeof(Node));
-    node->kind = ND_LVAR;
+    //Node* node = calloc(1, sizeof(Node));
+    //node->kind = ND_LVAR;
 
-    LVar* lvar = find_lvar(tok);
+    Node* node =  new_node(ND_VAR);
+    Var* lvar = find_lvar(tok);
+    Var* gvar = find_gvar(tok);
     if(lvar){
-      /*
-      if(locals){
-	lvar->offset = locals->offset + 8;
-      } else {
-	lvar->offset = 8;
-      } //if
-      node->offset = lvar->offset;
-      */
-      node->lvar = lvar;
+      node->var = lvar;
+    } else if(gvar){
+      node->var = gvar;
     } else {
       error_at(tok->str, "undefined variable");
     } //if

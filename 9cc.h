@@ -70,7 +70,7 @@ typedef enum {
   ND_LE, //<=
   ND_NUM, // Integer
   ND_ASSIGN, //assignment
-  ND_LVAR, //local variant
+  ND_VAR, //local/global variant
   ND_RETURN, //return
   ND_IF, //if
   ND_WHILE, //while
@@ -87,14 +87,18 @@ typedef enum {
 
 typedef struct Type Type;
 
-typedef struct LVar LVar;
-//type for local variable
-struct LVar{
-  LVar* next; //次の変数 or NULL
+typedef struct Var Var;
+//type for local/global variable
+struct Var{
+  Var* next; //次の変数 or NULL
   char* name; //変数の名前
   int len; //変数名の長さ
-  int offset; //RBPからのオフセット
   Type* type;
+  bool is_local; //if true then local else global
+
+  //for local variable
+  int offset; //RBPからのオフセット
+  
 };
 
 // AST node type
@@ -104,7 +108,6 @@ struct Node {
   Node* lhs;     // Left-hand side
   Node* rhs;     // Right-hand side
   int val;       // Used if kind == ND_NUM
-  //int offset;    // Used if kind == ND_LVAR
 
   //"if","while","for"
   Node* cond;
@@ -121,7 +124,7 @@ struct Node {
   char* funcname; //function name
   Node* args; //関数呼び出しのときの引数
 
-  LVar* lvar; // Used if kind == ND_LVAR
+  Var* var; // Used if kind == ND_VAR
 
   Type* type; //Type
 };
@@ -131,20 +134,21 @@ typedef struct Function Function;
 struct Function{
   Function* next;
   char* name;
-  LVar* params;
+  Var* params;
 
   Node* node; //function body
-  LVar* locals; //local variables in function
+  Var* locals; //local variables in function
   int stack_size;
 };
 
 typedef struct Program Program;
 struct Program{
   Function* fns;
+  Var* globals;
 };
 
 
-extern LVar* locals;
+//extern LVar* locals;
 
 Node* new_node(NodeKind kind);
 Node* new_binary(NodeKind kind, Node* lhs, Node* rhs);
