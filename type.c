@@ -2,9 +2,11 @@
 
 //                        kind, size, align
 Type* int_type = &(Type){ TY_INT, 4, 4 };
+Type* char_type = &(Type){ TY_CHAR, 1, 1 };
 
 bool is_integer(Type* t){
-  return t->kind == TY_INT;
+  TypeKind k = t->kind;
+  return k == TY_INT || k == TY_CHAR;
 } //is_integer()
 
 Type* new_type(TypeKind kind, int size, int align){

@@ -7,6 +7,7 @@
 //ラベルの番号
 static int labelseq = 1;
 
+static char* argreg1[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 static char* argreg4[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 
 //関数呼び出しの引数の順番
@@ -55,7 +56,9 @@ void load(Type* t){
   printf("  pop rax\n");
   
   //型のサイズによって処理を分ける必要がある
-  if(t->size == 4){
+  if(t->size == 1){
+    printf("  movsx rax, byte ptr [rax]\n");
+  } else if(t->size == 4){
     printf("  movsxd rax, dword ptr [rax]\n");
   } else {
     assert(t->size == 8);
@@ -70,7 +73,9 @@ void store(Type* t){
   printf("  pop rax\n");
 
   //型のサイズによって処理を分ける必要がある
-  if(t->size == 4){
+  if(t->size == 1){
+    printf("  mov [rax], dil\n");
+  } else if(t->size == 4){
     printf("  mov [rax], edi\n");
   } else {
     assert(t->size == 8);
@@ -309,7 +314,9 @@ void emit_data(Program* prog){
 void load_arg(Var* lvar, int index){
 
   int size = lvar->type->size;
-  if(size == 4){
+  if(size == 1){
+    printf("  mov [rbp-%d], %s\n", lvar->offset, argreg1[index]);
+  } else if(size == 4){
     printf("  mov [rbp-%d], %s\n", lvar->offset, argreg4[index]);
   } else {
     assert(size == 8);

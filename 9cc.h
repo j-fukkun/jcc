@@ -175,9 +175,11 @@ Function* function();
 //
 
 extern Type* int_type;
+extern Type* char_type;
 
 typedef enum{
   TY_INT,
+  TY_CHAR,
   TY_PTR,
   TY_ARRAY,
 } TypeKind;

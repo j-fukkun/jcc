@@ -34,6 +34,7 @@ try 5 'int main(){int a[2]; a[0] = 2; a[1] = 3; return a[0]+a[1];}'
 try 8 'int x; int main(){x = 8; return x;}'
 try 1 'int x; int main(){int x; x = 1; return x;}'
 try 5 'int x; int main(){x = 2; int y; y = 3; return x+y;}'
-
+try 5 'int main(){char a; char c; a = 10; c = 5; return a - c;}'
+try 5 'int main(){char a[2]; a[0] = 2; a[1] = 3; return a[0] + a[1];}'
 
 echo OK
