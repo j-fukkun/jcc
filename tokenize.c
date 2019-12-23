@@ -51,6 +51,15 @@ Token* consume_ident(){
   return t;
 } //consume_ident()
 
+Token* consume_str(){
+  if(token->kind != TK_STR){
+    return NULL;
+  } //if
+  Token* t = token;
+  token = token->next;
+  return t;  
+} //consume_str()
+
 
 //次のトークンが期待している記号のときには、トークンを一つ読み進める。
 //それ以外の場合には、エラーを報告する
@@ -140,6 +149,36 @@ char* startswith_reserved(char* p){
   
 } //startswith_reserved()
 
+Token* read_string(Token* cur, char* start){
+
+  char* p = start + 1;
+  char buf[1024];
+  int len = 0;
+
+  for(;;){
+    if(len == sizeof(buf)){
+      error_at(start, "string literal is too large");
+    }
+    if(*p == '\0'){
+      error_at(start, "unclosed string literal");
+    }
+    if(*p == '"'){
+      break;
+    }
+    buf[len] = *p;
+    ++len;
+    ++p;
+  } //for
+
+  Token* tok = new_token(TK_STR, cur, start, p-start+1);
+  tok->strings = malloc(len + 1);
+  memcpy(tok->strings, buf, len);
+  tok->strings[len] = '\0'; //文字列の最後
+  tok->str_len = len + 1;
+  return tok;
+
+} //read_string()
+
 /*入力文字列pをトークナイズしてそれを返す*/
 Token* tokenize(){
   char* p = user_input;
@@ -149,10 +188,16 @@ Token* tokenize(){
 
   while (*p) {
     //空白文字と改行をスキップ
-    if (isspace(*p)) {
+    if(isspace(*p)){
       p++;
       continue;
-    }
+    } //if(isspace(*p))
+
+    //string literal
+    if(*p == '"'){
+      cur = read_string(cur, p);
+      p += cur->len;
+    } //if(*p == '"')
 
     //複数文字を区切る
     //multi-letter

@@ -34,6 +34,12 @@ Node* new_node(NodeKind kind){
   return node;
 }
 
+Node* new_var_node(Var* v){
+  Node* node = new_node(ND_VAR);
+  node->var = v;
+  return node;
+}
+
 Node* new_binary(NodeKind kind, Node* lhs, Node* rhs){
   Node *node = new_node(kind);
   node->lhs = lhs;
@@ -71,9 +77,11 @@ Var* new_lvar(char* name, Type* type){
 } //new_lvar()
 
 //グローバル変数のnew
-Var* new_gvar(char* name, Type* type){
+Var* new_gvar(char* name, Type* type, bool is_literal, char* literal){
   Var* gvar = new_var(name, type, false);
   gvar->next = globals;
+  gvar->is_literal = is_literal;
+  gvar->literal = literal;
   globals = gvar;
   return gvar;
 } //new_gvar()
@@ -116,7 +124,7 @@ void global_var(){
   type = type_suffix(type);
   expect(";");
   
-  Var* gvar = new_gvar(name, type);
+  Var* gvar = new_gvar(name, type, false, NULL);
   
 } //global_var()
 
@@ -579,9 +587,18 @@ Node* func_args(){
   
 } //func_args()
 
+static char* new_label(){
+  static int count = 0;
+  char buf[20];
+  sprintf(buf, ".L.data.%d", count);
+  ++count;
+  return strndup(buf, 20);
+} //new_label()
+
 // primary = "(" expr ")"
-//           | num
 //           | ident func_args?
+//           | string_literal
+//           | num
 Node *primary() {
   if (consume("(")) {
     Node *node = expr();
@@ -616,6 +633,15 @@ Node *primary() {
     } //if
     return node;
   } //if(tok) consume_ident()
+
+  tok = consume_str();
+  if(tok){
+    Type* type = array_of(char_type, tok->str_len);
+    Var* gvar = new_gvar(new_label(), type, true, tok->strings);
+    //gvar->is_literal = true;
+    //gvar->literal = tok->strings;
+    return new_var_node(gvar);
+  } //if(tok) consume_str()
 
   return new_num(expect_number());
 } //primary()

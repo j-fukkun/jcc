@@ -304,9 +304,23 @@ void emit_data(Program* prog){
 
   Var* gvar = prog->globals;
   for(gvar; gvar; gvar = gvar->next){
+    if(gvar->is_literal){
+      continue;
+    }
     printf(".align %d\n", gvar->type->align);
     printf("%s:\n", gvar->name);
     printf("  .zero %d\n", gvar->type->size);
+  } //for
+
+  printf(".data\n");
+
+  gvar = prog->globals;
+  for(gvar; gvar; gvar = gvar->next){
+    if(gvar->is_literal){
+      printf(".align %d\n", gvar->type->align);
+      printf("%s:\n", gvar->name);
+      printf("  .string \"%s\"\n", gvar->literal);
+    }
   } //for
 
 } //emit_data()

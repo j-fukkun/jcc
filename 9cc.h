@@ -18,6 +18,7 @@ typedef enum{
   TK_RESERVED, //記号
   TK_IDENT, //識別子
   TK_NUM, //整数
+  TK_STR, //文字列
   TK_EOF, //入力の終わりを表すトークン
 } TokenKind;
 
@@ -30,6 +31,9 @@ struct Token{
   int val; //kindがTK_NUMの場合、その数値
   char *str; //トークン文字列
   int len; //トークンの長さ
+
+  char* strings; //string literal including '\0'
+  int str_len; //string literal length
 };
 
 //input program
@@ -95,10 +99,13 @@ struct Var{
   int len; //変数名の長さ
   Type* type;
   bool is_local; //if true then local else global
+  bool is_literal; //if true then string literal
 
   //for local variable
   int offset; //RBPからのオフセット
-  
+
+  //for global variable (string literal)
+  char* literal;
 };
 
 // AST node type
