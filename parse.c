@@ -183,6 +183,12 @@ void read_func_params(Function* fn){
   while(!consume(")")){
     expect(",");
 
+    if(consume("...")){
+      fn->has_varargs = true;
+      expect(")");
+      return;
+    } //if
+
     curr->next = read_func_param();
     curr = curr->next;    
   } //while
@@ -638,8 +644,6 @@ Node *primary() {
   if(tok){
     Type* type = array_of(char_type, tok->str_len);
     Var* gvar = new_gvar(new_label(), type, true, tok->strings);
-    //gvar->is_literal = true;
-    //gvar->literal = tok->strings;
     return new_var_node(gvar);
   } //if(tok) consume_str()
 

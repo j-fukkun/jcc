@@ -193,6 +193,27 @@ Token* tokenize(){
       continue;
     } //if(isspace(*p))
 
+    //skip comment
+    if(startswith(p, "//")){
+      p += 2;
+      while(*p != '\n'){
+	p++;
+      }
+      continue;
+    } //if(startswith(p, "//"))
+
+    if(startswith(p, "/*")){
+      char* q = strstr(p+2, "*/");
+      //strstrは、文字列から文字列を探して、渡された引数が
+      //見つかったとき、その先頭へのポインタを返す
+      //見つからなかったときはNULLを返す
+      if(!q){
+	error_at(p, "unclosed block comment");
+      }
+      p = q + 2; //pを*/の直後にセット
+      continue;
+    } //if(startswith(p, "/*"))
+
     //string literal
     if(*p == '"'){
       cur = read_string(cur, p);

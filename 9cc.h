@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 
 //
 //tokenizer
@@ -39,8 +40,11 @@ struct Token{
 //input program
 extern char* user_input;
 
-/*current token*/
-extern Token *token;
+//current token
+extern Token* token;
+
+//input filename
+extern char* filename;
 
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
@@ -146,6 +150,7 @@ struct Function{
   Node* node; //function body
   Var* locals; //local variables in function
   int stack_size;
+  bool has_varargs; //if true then has "..."
 };
 
 typedef struct Program Program;

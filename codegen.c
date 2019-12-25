@@ -213,6 +213,7 @@ void gen(Node* node){
     printf("  jmp .L.end.%d\n", seq);
     printf(".L.call.%d:\n", seq); //RSPが16の倍数ではないとき
     printf("  sub rsp, 8\n");
+    //rax is set to 0 for variadic function
     printf("  mov rax, 0\n");
     printf("  call %s\n", node->funcname);
     printf("  add rsp, 8\n");
@@ -353,6 +354,22 @@ void emit_text(Program* prog){
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
     printf("  sub rsp, %d\n", fn->stack_size);
+
+    if(fn->has_varargs){
+      int n = 0;
+      Var* lvar = fn->params;
+      for(lvar; lvar; lvar = lvar->next){
+	n++;
+      } //for
+
+      printf("mov dword ptr [rbp-8], %d\n", n * 8);
+      printf("mov [rbp-16], r9\n");
+      printf("mov [rbp-24], r8\n");
+      printf("mov [rbp-32], rcx\n");
+      printf("mov [rbp-40], rdx\n");
+      printf("mov [rbp-48], rsi\n");
+      printf("mov [rbp-56], rdi\n");
+    } //if(fn->has_varargs)
 
     //関数の引数をスタック領域に格納
     int i = 0;
