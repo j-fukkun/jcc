@@ -56,6 +56,7 @@ Node* new_unary(NodeKind kind, Node* lhs){
 Node* new_num(int val){
   Node *node = new_node(ND_NUM);
   node->val = val;
+  node->type = int_type;
   return node;
 }
 
@@ -85,6 +86,66 @@ Var* new_gvar(char* name, Type* type, bool is_literal, char* literal){
   globals = gvar;
   return gvar;
 } //new_gvar()
+
+Initializer* new_init_val(Initializer* cur, int sz, int val){
+  Initializer* init = calloc(1, sizeof(Initializer));
+  init->sz = sz;
+  init->val = val;
+  cur->next = init;
+  return init;
+} //new_init_val()
+
+Initializer* new_init_zero(Initializer* cur, int nbytes){
+  int i = 0;
+  for(i; i < nbytes; i++){
+    cur = new_init_val(cur, 1, 0);
+  } //for
+  return cur;
+} //new_init_zero()
+
+bool consume_end() {
+  Token *tok = token;
+  if (consume("}") || (consume(",") && consume("}")))
+    return true;
+  token = tok;
+  return false;
+} //consume_end()
+
+bool peek_end() {
+  Token *tok = token;
+  bool ret = consume("}") || (consume(",") && consume("}"));
+  token = tok;
+  return ret;
+} //peek_end()
+
+void expect_end() {
+  if (!consume_end())
+    expect("}");
+} //expect_end()
+
+void skip_excess_elements2() {
+  for (;;) {
+    if (consume("{")){
+      skip_excess_elements2();
+    }
+    else {
+      assign();
+    }
+
+    if (consume_end()){
+      return;
+    }
+    expect(",");
+  } //for
+  
+} //skip_excess_elements2()
+
+void skip_excess_elements() {
+  expect(",");
+  //warn_tok(token, "excess elements in initializer");
+  skip_excess_elements2();
+} //skip_excess_elements()
+
 
 //basetype = builtin-type "*"*
 //builtin-type = "int" | "char"
@@ -116,15 +177,107 @@ bool is_function(){
   return is_func;  
 } //is_function()
 
-//global_var = basetype ident type_suffix ";"
+
+//gvar_initializer2 = assign
+//                 | "{" (gvar_initializer2 ("," gvar_initializer2)* ","? )? "}"
+Initializer* gvar_initializer2(Initializer* cur, Type* type){
+
+  Token* tok = token;
+  
+  if(type->kind == TY_ARRAY && type->base->kind == TY_CHAR
+     && token->kind == TK_STR){
+    //in case of char a[]="hoge";
+    token = token->next;
+
+    if(type->is_incomplete){
+      type->size = tok->str_len;
+      type->array_size = tok->str_len;
+      type->is_incomplete = false;
+    } //if
+
+    //compare array_size with string_length
+    int len = (type->array_size < tok->str_len)
+      ? type->array_size : tok->str_len;
+
+    int i = 0;
+    for(i; i < len; i++){
+      cur = new_init_val(cur, 1, tok->strings[i]);
+    } //for
+    return new_init_zero(cur, type->array_size - len);
+  } //if TY_ARRAY && TY_CHAR && TK_STR
+
+  if(type->kind == TY_ARRAY){
+    //in case of TYPE a[] = hogehoge;
+
+    bool open = consume("{");
+    int i = 0;
+    int limit = type->is_incomplete ? INT_MAX : type->array_size;
+
+    if(!peek("}")){
+      do{
+	cur = gvar_initializer2(cur, type->base);
+	i++;
+      } while(i < limit && !peek_end() && consume(","));
+    } //if
+
+    if(open && !consume_end()){
+      skip_excess_elements();
+    } //if
+
+    //set excess array elements to zero
+    cur = new_init_zero(cur, type->base->size * (type->array_size - i));
+
+    if(type->is_incomplete){
+      type->size = type->base->size * i;
+      type->array_size = i;
+      type->is_incomplete = false;
+    } //if
+    return cur;    
+  } //if(type->kind == TY_ARRAY)
+
+  //if(type->kind == TY_STRUCT)
+
+  bool open = consume("{");
+  Node* expression = expr();
+  if(open){
+    expect_end();
+  }
+
+  int constant = eval(expression);
+  
+  
+  return new_init_val(cur, type->size, constant);
+} //gvar_initializer2()
+
+Initializer* gvar_initializer(Type *type) {
+  Initializer head = {};
+  gvar_initializer2(&head, type);
+  return head.next;
+}
+
+
+//global_var = basetype ident type_suffix ("=" gvar_initializer)?";"
 void global_var(){
   
   Type* type = basetype();
+
+  Token* tok = token;
   char* name = expect_ident();
   type = type_suffix(type);
-  expect(";");
+  //expect(";");
   
   Var* gvar = new_gvar(name, type, false, NULL);
+
+  if(consume("=")){
+    gvar->initializer = gvar_initializer(type);
+    expect(";");
+    return;
+  } //if
+
+  if (type->is_incomplete){
+    error_tok(tok, "incomplete type");
+  }
+  expect(";");
   
 } //global_var()
 
@@ -258,17 +411,20 @@ Type* type_suffix(Type* type){
   }
 
   int size = 0;
-  
+  bool is_incomplete = true; //index is omitted? 
   if(!consume("]")){
     size = const_expr();
-
+    is_incomplete = false;
     expect("]");
   } //if
 
   type = type_suffix(type);
+  if(type->is_incomplete){
+    error("incomplete type");
+  }
 
   type = array_of(type, size);
-  
+  type->is_incomplete = is_incomplete;
   return type;
 } //type_suffix()
 

@@ -305,7 +305,7 @@ void emit_data(Program* prog){
 
   Var* gvar = prog->globals;
   for(gvar; gvar; gvar = gvar->next){
-    if(gvar->is_literal){
+    if(gvar->is_literal || gvar->initializer){
       continue;
     }
     printf(".align %d\n", gvar->type->align);
@@ -321,7 +321,21 @@ void emit_data(Program* prog){
       printf(".align %d\n", gvar->type->align);
       printf("%s:\n", gvar->name);
       printf("  .string \"%s\"\n", gvar->literal);
-    }
+    } //if
+
+    if(gvar->initializer){
+      printf(".align %d\n", gvar->type->align);
+      printf("%s:\n", gvar->name);
+
+      Initializer* init = gvar->initializer;
+      for(init; init; init = init->next){
+	if(init->sz == 1){
+	  printf("  .byte %d\n", init->val);
+	} else {
+	  printf("  .%dbyte %d\n", init->sz, init->val);
+	}
+      } //for
+    } //if
   } //for
 
 } //emit_data()

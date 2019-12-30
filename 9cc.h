@@ -9,6 +9,7 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 
 //
 //tokenizer
@@ -47,7 +48,10 @@ extern Token* token;
 extern char* filename;
 
 void error(char *fmt, ...);
+void verror_at(char *loc, char *fmt, va_list ap);
 void error_at(char *loc, char *fmt, ...);
+void error_tok(Token *tok, char *fmt, ...);
+void warn_tok(Token *tok, char *fmt, ...);
 bool consume(char* op);
 Token* consume_ident();
 void expect(char* op);
@@ -94,6 +98,7 @@ typedef enum {
 } NodeKind;
 
 typedef struct Type Type;
+typedef struct Initializer Initializer;
 
 typedef struct Var Var;
 //type for local/global variable
@@ -110,6 +115,7 @@ struct Var{
 
   //for global variable (string literal)
   char* literal;
+  Initializer* initializer;
 };
 
 // AST node type
@@ -138,6 +144,14 @@ struct Node {
   Var* var; // Used if kind == ND_VAR
 
   Type* type; //Type
+};
+
+struct Initializer{
+  Initializer* next;
+
+  //constant expression
+  int sz;
+  int val;
 };
 
 
@@ -202,6 +216,7 @@ struct Type{
   int align;
   Type* base;    //pointer
   int array_size; //size of array
+  bool is_incomplete; //index is omitted?
 };
 
 bool is_integer(Type* t);

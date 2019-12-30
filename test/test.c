@@ -1,5 +1,8 @@
 
 int x;
+int y = 10;
+char z[6] = "Hello";
+char zz[] = "World";
 
 int kaijo(int x){
   if(x == 1){
@@ -129,6 +132,8 @@ int main(){
   d[1] = 2;
   printf("d[0] = %d\n", d[0]);
   
+  printf("y(global init) = %d\n", y);
+  printf("%s, %s\n", z, zz);
   
   return 0;
 } //main
