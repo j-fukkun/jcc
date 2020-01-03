@@ -94,6 +94,7 @@ typedef enum {
   ND_PTR_ADD, //pointer add
   ND_PTR_SUB, //pointer sub
   ND_PTR_DIFF, //pointer difference
+  ND_EXPR_STMT, 
   ND_NULL, //コード生成しない
 } NodeKind;
 
@@ -154,6 +155,12 @@ struct Initializer{
   int val;
 };
 
+typedef struct Designator Designator;
+struct Designator{
+  Designator* next;
+  int index; //for array
+};
+
 
 typedef struct Function Function;
 struct Function{
@@ -188,6 +195,7 @@ Node* expr();
 Node* assign();
 Node* equality();
 Node* relational();
+Node* new_add(Node* lhs, Node* rhs);
 Node* add();
 Node* mul();
 Node* unary();

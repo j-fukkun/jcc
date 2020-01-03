@@ -6,15 +6,25 @@
 
 Var* locals = NULL;
 Var* globals = NULL;
+Var* params = NULL;
 
 
 Var* find_lvar(Token* tok){
   Var* var = locals;
   for(var; var; var = var->next){
+    //printf("var->name = %s", var->name);
     if(var->len == tok->len && !strncmp(tok->str, var->name, var->len)){
       return var;
     } //if
   } //for
+
+  Var* param = params;
+  for(param; param; param = param->next){
+    if(param->len == tok->len && !strncmp(tok->str, param->name, param->len)){
+      return param;
+    } //if
+  } //for
+  
   return NULL;
 } //find_lvar()
 
@@ -76,6 +86,7 @@ Var* new_lvar(char* name, Type* type){
   locals = lvar;
   return lvar;
 } //new_lvar()
+
 
 //グローバル変数のnew
 Var* new_gvar(char* name, Type* type, bool is_literal, char* literal){
@@ -310,16 +321,26 @@ Program* program(){
 } //program()
 
 
-//param = basetype ident
+//param = basetype ident type_suffix
 Var* read_func_param(){
 
   Type* type = basetype();
   Token* tok = consume_ident();
-  if(tok){
-    return new_lvar(strndup(tok->str, tok->len), type);
-  } //if(tok)
+  type = type_suffix(type);
+
+  if(type->kind == TY_ARRAY){
+    type = pointer_to(type->base);
+  } //if
   
-  return NULL;
+  //if(tok){
+  char* name = strndup(tok->str, tok->len);
+  //printf("new_lvar %s", name);
+  //fflush(stdout);
+  //return new_lvar(name, type);
+  return new_var(name, type, true);
+    //} //if(tok)
+  
+  //return NULL;
 } //read_func_param()
 
 //params = param ("," param)*
@@ -345,7 +366,7 @@ void read_func_params(Function* fn){
     curr->next = read_func_param();
     curr = curr->next;    
   } //while
-    
+  curr->next = NULL;
 } //read_func_params()
 
 //function = basetype ident "(" params? ")" "{" stmt* "}"
@@ -354,14 +375,17 @@ void read_func_params(Function* fn){
 Function* function(){
   
   locals = NULL;
-
+  params = NULL;
+  
   Type* type = basetype();
   char* name = expect_ident();
   Function* fn = calloc(1, sizeof(Function));
   fn->name = name;
   expect("(");
-  
+
+  fn->params = NULL;
   read_func_params(fn);
+  params = fn->params;
 
   //error("locals = %s\n", locals->name);
 
@@ -386,21 +410,149 @@ bool is_typename(){
 
 } //is_typename()
 
+Node* new_desg_node2(Var* var, Designator* desg) {
+  if(!desg){
+    return new_var_node(var);
+  }
 
-//declaration = basetype ident type_suffix ";"
+  Node* node = new_desg_node2(var, desg->next);
+  /*
+  if(desg->mem){
+    node = new_unary(ND_MEMBER, node, desg->mem->tok);
+    node->member = desg->mem;
+    return node;
+  }
+  */
+
+  node = new_add(node, new_num(desg->index));
+  return new_unary(ND_DEREF, node);
+} //new_desg_node2()
+
+Node* new_desg_node(Var* var, Designator* desg, Node* rhs) {
+  Node *lhs = new_desg_node2(var, desg);
+  Node *node = new_binary(ND_ASSIGN, lhs, rhs);
+  return new_unary(ND_EXPR_STMT, node);
+} //new_desg_node()
+
+Node* lvar_init_zero(Node* cur, Var* var, Type* ty, Designator* desg) {
+  if (ty->kind == TY_ARRAY) {
+    for (int i = 0; i < ty->array_size; i++) {
+      Designator desg2 = {desg, i++};
+      cur = lvar_init_zero(cur, var, ty->base, &desg2);
+    }
+    return cur;
+  }
+
+  cur->next = new_desg_node(var, desg, new_num(0));
+  return cur->next;
+} //lvar_init_zero()
+
+Node* lvar_initializer2(Node* cur, Var* lvar, Type* type, Designator* desg){
+
+  Token* tok = token;
+  
+  if(type->kind == TY_ARRAY && type->base->kind == TY_CHAR
+     && token->kind == TK_STR){
+    //in case of char a[]="hoge";
+    token = token->next;
+
+    if(type->is_incomplete){
+      type->size = tok->str_len;
+      type->array_size = tok->str_len;
+      type->is_incomplete = false;
+    } //if
+
+    //compare array_size with string_length
+    int len = (type->array_size < tok->str_len)
+      ? type->array_size : tok->str_len;
+
+    int i = 0;
+    for(i; i < len; i++){
+      Designator desg2 = {desg, i};
+      Node *rhs = new_num(tok->strings[i]);
+      cur->next = new_desg_node(lvar, &desg2, rhs);
+      cur = cur->next;
+    } //for
+
+    //initialize zero
+    for (int i = len; i < type->array_size; i++) {
+      Designator desg2 = {desg, i};
+      cur = lvar_init_zero(cur, lvar, type->base, &desg2);
+    }
+    return cur;
+  } //if TY_ARRAY && TY_CHAR && TK_STR
+
+  if(type->kind == TY_ARRAY){
+    bool open = consume("{");
+    int i = 0;
+    int limit = type->is_incomplete ? INT_MAX : type->array_size;
+
+    if (!peek("}")) {
+      do {
+        Designator desg2 = {desg, i++};
+        cur = lvar_initializer2(cur, lvar, type->base, &desg2);
+      } while (i < limit && !peek_end() && consume(","));
+    }
+
+    if (open && !consume_end()){
+      skip_excess_elements();
+    }
+
+    // Set excess array elements to zero.
+    while (i < type->array_size) {
+      Designator desg2 = {desg, i++};
+      cur = lvar_init_zero(cur, lvar, type->base, &desg2);
+    }
+
+    if (type->is_incomplete) {
+      type->size = type->base->size * i;
+      type->array_size = i;
+      type->is_incomplete = false;
+    }
+    return cur;
+  } //if(type->kind == TY_ARRAY)
+
+  bool open = consume("{");
+  cur->next = new_desg_node(lvar, desg, assign());
+  if (open){
+    expect_end();
+  }
+  return cur->next;
+  
+} //lvar_initializer2()
+
+Node* lvar_initializer(Var* lvar){
+
+  Node head = {};
+  lvar_initializer2(&head, lvar, lvar->type, NULL);
+
+  Node* node = new_node(ND_BLOCK);
+  node->body = head.next;
+  return node;
+} //lvar_initializer()
+
+
+//declaration = basetype ident type_suffix ("=" lvar_initializer)? ";"
 Node* declaration(){
-
+  Token* tok = token;
   Type* type = basetype();
   char* name = expect_ident();
-
-  //if(expect("[")){
-    type = type_suffix(type);
-    //} //if
-  
-  expect(";");
+  type = type_suffix(type);
 
   Var* lvar = new_lvar(name, type);
-  return new_node(ND_NULL); //変数宣言では、コード生成はしない
+  
+  //expect(";");
+  if(consume(";")){
+    if(type->is_incomplete){
+      error_tok(tok, "incomplete type");
+    }
+    return new_node(ND_NULL); //変数宣言では、コード生成はしない
+  } //if
+
+  expect("=");
+  Node* node = lvar_initializer(lvar);
+  expect(";");
+  return node;  
     
 } //declaration()
 

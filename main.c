@@ -42,14 +42,45 @@ int main(int argc, char **argv){
   user_input = read_file(filename);
   token = tokenize();
   Program* prog = program();
+  //printf("test1");
+  //fflush(stdout);
 
 
   //スタックサイズを計算
   Function* fn = prog->fns;
   for(fn; fn; fn = fn->next){
+    //printf("function name = %s", fn->name);
+    //fflush(stdout);
     int offset = fn->has_varargs ? 56 : 0;
+    //Var* lvar = fn->locals;
+    /*
+    printf("lvar_name = %s", lvar->name);
+    fflush(stdout);
+    lvar = lvar->next;
+    printf("lvar2_name = %s", lvar->name);
+    fflush(stdout);
+    lvar = lvar->next;
+    if(lvar != NULL){
+      printf("lvar3_name = %s", lvar->name);
+      fflush(stdout);
+    }
+    lvar = lvar->next;
+    if(lvar != NULL){
+      printf("lvar4_name = %s", lvar->name);
+      fflush(stdout);
+    }
+    */
+    Var* param = fn->params;
+    for(param; param; param = param->next){
+      offset = align_to(offset, param->type->align);
+      offset += param->type->size;
+      param->offset = offset;
+    } //for param
+    
     Var* lvar = fn->locals;
     for(lvar; lvar; lvar = lvar->next){
+      //printf("test2-2");
+      //fflush(stdout);
       offset = align_to(offset, lvar->type->align);
       offset += lvar->type->size;
       lvar->offset = offset;
@@ -57,6 +88,8 @@ int main(int argc, char **argv){
     fn->stack_size = align_to(offset, 8); //offset;
   } //for
 
+  //printf("test3");
+  //fflush(stdout);
   //emit assembly code
   codegen(prog);
   

@@ -93,6 +93,10 @@ void gen(Node* node){
   case ND_NUM:
     printf("  push %d\n", node->val);
     return;
+  case ND_EXPR_STMT:
+    gen(node->lhs);
+    printf("  add rsp, 8\n"); //is this necessary?
+    return;
   case ND_VAR:
     gen_address(node);
     //配列はアドレスを計算するだけで良い
