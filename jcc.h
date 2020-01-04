@@ -1,5 +1,5 @@
-#ifndef NINE_CC_H
-#define NINE_CC_H
+#ifndef JCC_H
+#define JCC_H
 
 #include <ctype.h>
 #include <stdarg.h>

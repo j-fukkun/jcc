@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "jcc.h"
 
 //
 // code generator

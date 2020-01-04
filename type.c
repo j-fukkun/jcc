@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "jcc.h"
 
 //                        kind, size, align
 Type* int_type = &(Type){ TY_INT, 4, 4 };

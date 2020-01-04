@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "jcc.h"
 
 //input program
 char* user_input;
