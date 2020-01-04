@@ -53,6 +53,14 @@ int kaijo(int x){
   }
 }
 
+void void_test(){
+  printf("void_test OK\n");
+}
+
+void void_test2(void){
+  printf("void_test2 OK\n");
+}
+
 
 int main(){
 
@@ -233,7 +241,12 @@ int main(){
 
 
   assert(3, g3, "g3");
-  
+
+  void_test();
+  void_test2();
+
+    
+    
   return 0;
 } //main
 

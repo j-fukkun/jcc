@@ -3,6 +3,7 @@
 //                        kind, size, align
 Type* int_type = &(Type){ TY_INT, 4, 4 };
 Type* char_type = &(Type){ TY_CHAR, 1, 1 };
+Type* void_type  = &(Type){ TY_VOID, 1, 1 };
 
 bool is_integer(Type* t){
   TypeKind k = t->kind;

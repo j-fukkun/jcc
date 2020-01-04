@@ -159,7 +159,7 @@ void skip_excess_elements() {
 
 
 //basetype = builtin-type "*"*
-//builtin-type = "int" | "char"
+//builtin-type = "int" | "char" | "void"
 Type* basetype(){
   Type* type = NULL;
 
@@ -167,7 +167,9 @@ Type* basetype(){
     type = int_type;
   } else if(consume("char")){
     type = char_type;
-  }
+  } else if(consume("void")){
+    type = void_type;
+  } //if
   
   while(consume("*")){
     type = pointer_to(type);
@@ -275,8 +277,10 @@ void global_var(){
   Token* tok = token;
   char* name = expect_ident();
   type = type_suffix(type);
-  //expect(";");
   
+  if(type->kind == TY_VOID){
+    error_tok(tok, "variable declared void");
+  }
   Var* gvar = new_gvar(name, type, false, NULL);
 
   if(consume("=")){
@@ -351,6 +355,13 @@ void read_func_params(Function* fn){
     return;
   }
 
+  Token* tok = token;
+  if(consume("void") && consume(")")){
+    //args is void
+    return;
+  }
+  token = tok;
+
   fn->params = read_func_param();
   Var* curr = fn->params;
 
@@ -406,7 +417,7 @@ Function* function(){
 
 bool is_typename(){
 
-  return peek("int") || peek("char");
+  return peek("int") || peek("char") || peek("void");
 
 } //is_typename()
 
@@ -539,6 +550,10 @@ Node* declaration(){
   char* name = expect_ident();
   type = type_suffix(type);
 
+  if(type->kind == TY_VOID){
+    error_tok(tok, "variable declared void");
+  }
+
   Var* lvar = new_lvar(name, type);
   
   //expect(";");
@@ -570,9 +585,11 @@ Type* type_suffix(Type* type){
     expect("]");
   } //if
 
+  Token* tok = token;
+  //type->is_incomplete = is_incomplete;
   type = type_suffix(type);
   if(type->is_incomplete){
-    error("incomplete type");
+    error_tok(tok,"incomplete type");
   }
 
   type = array_of(type, size);
