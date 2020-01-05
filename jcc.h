@@ -94,7 +94,11 @@ typedef enum {
   ND_PTR_ADD, //pointer add
   ND_PTR_SUB, //pointer sub
   ND_PTR_DIFF, //pointer difference
-  ND_EXPR_STMT, 
+  ND_EXPR_STMT,
+  ND_PRE_INC, //++a
+  ND_PRE_DEC, //--a
+  ND_POST_INC, //a++
+  ND_POST_DEC, //a--
   ND_NULL, //コード生成しない
 } NodeKind;
 

@@ -85,6 +85,19 @@ void store(Type* t){
   printf("  push rdi\n");
 } //store()
 
+void inc(Type* type){
+  printf("  pop rax\n");
+  printf("  add rax, %d\n", type->base ? type->base->size : 1);
+  printf("  push rax\n");
+} //inc()
+
+void dec(Type* type){
+  printf("  pop rax\n");
+  printf("  sub rax, %d\n", type->base ? type->base->size : 1);
+  printf("  push rax\n");
+} //dec()
+
+
 void gen(Node* node){
     
   switch(node->kind) {
@@ -95,7 +108,7 @@ void gen(Node* node){
     return;
   case ND_EXPR_STMT:
     gen(node->lhs);
-    printf("  add rsp, 8\n"); //is this necessary?
+    //printf("  add rsp, 8\n"); //is this necessary?
     return;
   case ND_VAR:
     gen_address(node);
@@ -240,6 +253,36 @@ void gen(Node* node){
     return;
   } //case ND_DEREF
     
+  case ND_PRE_INC:
+    gen_lval(node->lhs);
+    printf("  push [rsp]\n"); //duplicate the address of left value on stack
+    load(node->type); //the one is used for load and increment
+    inc(node->type);
+    store(node->type); //the other is used for store the value
+    return;
+  case ND_PRE_DEC:
+    gen_lval(node->lhs);
+    printf("  push [rsp]\n");
+    load(node->type);
+    dec(node->type);
+    store(node->type);
+    return;
+  case ND_POST_INC:
+    gen_lval(node->lhs);
+    printf("  push [rsp]\n");
+    load(node->type);
+    inc(node->type);
+    store(node->type);
+    dec(node->type);
+    return;
+  case ND_POST_DEC:
+    gen_lval(node->lhs);
+    printf("  push [rsp]\n");
+    load(node->type);
+    dec(node->type);
+    store(node->type);
+    inc(node->type);
+    return;
     
   }  //switch
 

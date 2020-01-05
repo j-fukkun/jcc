@@ -42,9 +42,6 @@ int main(int argc, char **argv){
   user_input = read_file(filename);
   token = tokenize();
   Program* prog = program();
-  //printf("test1");
-  //fflush(stdout);
-
 
   //スタックサイズを計算
   Function* fn = prog->fns;
@@ -53,23 +50,7 @@ int main(int argc, char **argv){
     //fflush(stdout);
     int offset = fn->has_varargs ? 56 : 0;
     //Var* lvar = fn->locals;
-    /*
-    printf("lvar_name = %s", lvar->name);
-    fflush(stdout);
-    lvar = lvar->next;
-    printf("lvar2_name = %s", lvar->name);
-    fflush(stdout);
-    lvar = lvar->next;
-    if(lvar != NULL){
-      printf("lvar3_name = %s", lvar->name);
-      fflush(stdout);
-    }
-    lvar = lvar->next;
-    if(lvar != NULL){
-      printf("lvar4_name = %s", lvar->name);
-      fflush(stdout);
-    }
-    */
+    
     Var* param = fn->params;
     for(param; param; param = param->next){
       offset = align_to(offset, param->type->align);
@@ -79,8 +60,6 @@ int main(int argc, char **argv){
     
     Var* lvar = fn->locals;
     for(lvar; lvar; lvar = lvar->next){
-      //printf("test2-2");
-      //fflush(stdout);
       offset = align_to(offset, lvar->type->align);
       offset += lvar->type->size;
       lvar->offset = offset;

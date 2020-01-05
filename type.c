@@ -15,6 +15,7 @@ Type* new_type(TypeKind kind, int size, int align){
   type->kind = kind;
   type->size = size;
   type->align = align;
+  type->base = NULL;
   return type;
 } //new_type()
 
@@ -74,6 +75,10 @@ void add_type(Node *node) {
   case ND_PTR_ADD:
   case ND_PTR_SUB:
   case ND_ASSIGN:
+  case ND_PRE_INC:
+  case ND_PRE_DEC:
+  case ND_POST_INC:
+  case ND_POST_DEC:
     node->type = node->lhs->type;
     return;
   case ND_VAR:

@@ -245,8 +245,16 @@ int main(){
   void_test();
   void_test2();
 
-    
-    
+  int l = 100;
+  assert(101,++l,"int local = 0; ++local;");
+  l = 0;
+  assert(0,l++,"local = 0;local++;");
+  /*
+  int la[] = {1,2,3};
+  int* p = la;
+  assert(2,++p,"la={1,2,3};++la;");
+  assert(1,p++,"la={1,2,3};la++;");
+  */
   return 0;
 } //main
 

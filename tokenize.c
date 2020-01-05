@@ -261,7 +261,9 @@ Token* tokenize(){
     //複数文字を区切る
     //multi-letter
     if(startswith(p, "==") || startswith(p, "!=") ||
-       startswith(p, "<=") || startswith(p, ">=")){
+       startswith(p, "<=") || startswith(p, ">=") ||
+       startswith(p, "++") || startswith(p, "--")
+       ){
       cur = new_token(TK_RESERVED, cur, p, 2);
       p += 2;
       continue;
